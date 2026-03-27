@@ -77,7 +77,7 @@
       <li>直连端口模式下使用 <code>/anthropic</code>、<code>/v1</code>、<code>/compat/v1</code>。</li>
       <li>nginx 前缀模式下使用 <code>/codex/anthropic</code>、<code>/codex/v1</code>、<code>/codex/compat/v1</code>。</li>
       <li>Claude Code 原生入口优先使用 Anthropic 兼容入口，不要优先走 <code>chat/completions</code>。</li>
-      <li>如果你走 OAuth loopback 模式，浏览器会跳到 <code>http://localhost:1455/auth/callback</code>，这是正常的本地回调。</li>
+      <li>Public 版默认只适合个人使用，推荐直接导入本机 <code>~/.codex/auth.json</code>。</li>
     </ul>
   </div>
 

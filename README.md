@@ -1,73 +1,83 @@
 # codex-personal-proxy
 
-A personal Codex relay with:
+`codex-personal-proxy` is a personal Codex relay for one account on one server.
 
-- OpenAI Responses compatibility
-- `chat.completions` compatibility
+It is intended only to solve individual usage:
+
+- one person
+- one upstream account
+- one server or one personal VM
+- localhost, LAN, SSH tunnel, or a simple personal domain
+
+It is not intended for:
+
+- public relay services
+- shared account pools
+- commercial resale
+- multi-tenant routing
+- team billing or quota resale
+
+This public repo removes OAuth login on purpose. The recommended path is to log in with Codex locally, then import local `~/.codex/auth.json` into the relay.
+
+## What It Provides
+
+- OpenAI Responses compatible API
+- `chat.completions` compatibility for older tools
 - Anthropic-compatible endpoint for Claude Code
 - built-in admin UI
 - local `~/.codex/auth.json` import
-- OAuth account import for ChatGPT-backed Codex accounts
+- manual account entry
 
-This public repo is meant for direct personal use first. Domain and nginx are optional.
+## Deployment Modes
 
-## Two Deployment Modes
+### Direct Port Mode
 
-### 1. Direct Port Mode
+Best for personal use and no-domain setups.
 
-Use this when you:
+Base URL example:
 
-- do not have a domain
-- only need personal use
-- want to access the server by `localhost`, LAN IP, SSH tunnel, or port mapping
+- `http://127.0.0.1:3101`
 
-Paths in this mode:
+Paths:
 
 - Admin UI: `/`
 - Docs: `/docs/claude-codex-usage.html`
 - OpenAI Responses: `/v1`
 - `chat.completions`: `/compat/v1`
-- Claude Code / Anthropic: `/anthropic`
+- Claude Code: `/anthropic`
 
-Example base URL:
+### Domain + Nginx Mode
 
-- `http://127.0.0.1:3101`
+Optional. Only use this if you already have a personal domain.
 
-### 2. Domain + Nginx Mode
+Base URL example:
 
-Use this when you:
+- `https://codex.example.com/codex`
 
-- have a public domain
-- want cleaner external URLs
-- want server callback OAuth under your own domain
-
-Paths in this mode:
+Paths:
 
 - Admin UI: `/codex-admin`
 - Docs: `/codex-admin/docs/claude-codex-usage.html`
 - OpenAI Responses: `/codex/v1`
 - `chat.completions`: `/codex/compat/v1`
-- Claude Code / Anthropic: `/codex/anthropic`
+- Claude Code: `/codex/anthropic`
 
-Example base URL:
+## Actual Config Sources
 
-- `https://codex.example.com/codex`
+There is no hidden Tencent Cloud `app.setting.json`.
 
-## What Config Actually Controls This
-
-There is no hidden `app.setting`.
-
-Server-side config:
+Server-side:
 
 - `.env`
 - `data/init.json`
+- `Redis`
 
-Client-side config:
+Client-side:
 
 - `~/.codex/config.toml`
-- `~/.codex/auth.json` only when importing a local account into the relay
+- `~/.codex/auth.json` when importing a local account
 
-## Quick Start: Local Or Tencent Cloud Without Domain
+## Quick Start: Personal / No Domain
 
 ```bash
 git clone git@github.com:yangtianchangxiao/codex-personal-proxy.git
@@ -92,18 +102,18 @@ Docs:
 
 - `http://127.0.0.1:3101/docs/claude-codex-usage.html`
 
-If the relay runs on a remote Tencent Cloud machine and you do not want to open a public port, use SSH tunnel:
+If the relay runs on Tencent Cloud and you do not want a public port, use SSH tunnel:
 
 ```bash
 ssh -L 3101:127.0.0.1:3101 ubuntu@YOUR_TENCENT_CLOUD_IP
 ```
 
-Then your local machine can still use:
+Then use locally:
 
 - `http://127.0.0.1:3101/v1`
 - `http://127.0.0.1:3101/anthropic`
 
-## Quick Start: Tencent Cloud With Domain
+## Quick Start: Personal Domain + Nginx
 
 ```bash
 git clone git@github.com:yangtianchangxiao/codex-personal-proxy.git
@@ -117,21 +127,21 @@ cd codex-personal-proxy
   --with-systemd
 ```
 
-This does:
-
-- installs packages on Ubuntu if needed
-- writes `.env`
-- generates `data/init.json`
-- installs nginx config template
-- installs systemd service template
-
-After that:
+Verify:
 
 ```bash
 systemctl status codex-personal-proxy
 curl -sS http://127.0.0.1:3101/health
 curl -sS https://codex.example.com/codex-admin/health
 ```
+
+## Recommended Account Flow
+
+1. Log in with Codex locally on your own machine
+2. Open the relay admin UI
+3. Import local `~/.codex/auth.json`
+4. Create your own `cx_...` API key
+5. Point Claude Code or Codex CLI at this relay
 
 ## Client Configuration
 
@@ -179,28 +189,13 @@ See [examples/codex-config.toml](/home/ubuntu/codex-personal-proxy/examples/code
 
 See [examples/client-env.sh](/home/ubuntu/codex-personal-proxy/examples/client-env.sh).
 
-## OAuth Modes
-
-Supported modes:
-
-- loopback OAuth: browser returns to `http://localhost:1455/auth/callback`
-- server callback OAuth: browser returns to your public domain callback
-
-For direct port / no-domain use, loopback OAuth is the correct default.
-
-If you need server callback OAuth, set one of:
-
-- `PUBLIC_BASE_URL=https://your-domain`
-- `CODEX_OAUTH_REDIRECT_URI=https://your-domain/codex/oauth/callback`
-
 ## Important Environment Variables
 
 - `CODEX_PORT`: local listen port, default `3101`
 - `REDIS_URL`: Redis connection, default `redis://127.0.0.1:6379`
 - `ENCRYPTION_SECRET`: required; used to encrypt stored tokens
 - `CODEX_PUBLIC_DOMAIN`: optional public domain
-- `PUBLIC_BASE_URL`: optional public origin, e.g. `https://codex.example.com`
-- `CODEX_OAUTH_REDIRECT_URI`: explicit OAuth callback override
+- `PUBLIC_BASE_URL`: optional public origin
 - `CODEX_PROXY_URL`: optional outbound proxy
 - `CODEX_DIRECT_HOSTS`: hosts that should bypass the proxy
 
@@ -210,13 +205,6 @@ If you need server callback OAuth, set one of:
 - systemd template: [deploy/systemd/codex-personal-proxy.service.template](/home/ubuntu/codex-personal-proxy/deploy/systemd/codex-personal-proxy.service.template)
 - environment example: [.env.example](/home/ubuntu/codex-personal-proxy/.env.example)
 - smoke test: [scripts/smoke-test.sh](/home/ubuntu/codex-personal-proxy/scripts/smoke-test.sh)
-
-## Security Notes
-
-- `.env` and `data/init.json` are gitignored
-- this repo does not ship real credentials
-- `ENCRYPTION_SECRET` is required
-- rotate keys if you have pasted real keys into shells or docs
 
 ## Verification Checklist
 

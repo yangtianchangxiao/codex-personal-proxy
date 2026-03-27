@@ -125,15 +125,6 @@ start() {
         export HTTP_PROXY="${HTTP_PROXY:-$CODEX_PROXY_URL}"
     fi
 
-    # 服务器回调模式建议使用 HTTPS 域名；未配置时仍可使用 loopback 模式 OAuth
-    if [ -z "${CODEX_OAUTH_REDIRECT_URI:-}" ]; then
-        if [ -n "$PUBLIC_BASE_URL" ]; then
-            export CODEX_OAUTH_REDIRECT_URI="${PUBLIC_BASE_URL%/}/codex/oauth/callback"
-        elif [ -n "$CODEX_PUBLIC_DOMAIN" ]; then
-            export CODEX_OAUTH_REDIRECT_URI="https://${CODEX_PUBLIC_DOMAIN}/codex/oauth/callback"
-        fi
-    fi
-
     # 确保使用选定 Node 运行时（避免 systemd/non-login shell 落到旧版本 /usr/bin/node）
     nohup "$NODE_BIN" src/app.js > "$LOG_FILE" 2>&1 &
     echo $! > "$PID_FILE"

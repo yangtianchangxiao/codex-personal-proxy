@@ -113,9 +113,6 @@ write_env_key CODEX_PUBLIC_DOMAIN "$DOMAIN"
 write_env_key PUBLIC_BASE_URL "$PUBLIC_BASE_URL"
 write_env_key CODEX_PROXY_URL "$CODEX_PROXY_URL"
 write_env_key AUTO_START_REDIS "1"
-if [ -n "$PUBLIC_BASE_URL" ]; then
-  write_env_key CODEX_OAUTH_REDIRECT_URI "${PUBLIC_BASE_URL%/}/codex/oauth/callback"
-fi
 
 npm install
 

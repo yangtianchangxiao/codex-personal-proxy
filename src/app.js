@@ -482,11 +482,6 @@ app.get('/api/auth/check', async (req, res) => {
 // 认证中间件
 const authenticateAdmin = async (req, res, next) => {
   try {
-    // OAuth 回调使用 state 关联 session，不强依赖管理员 cookie（避免 SameSite/跨站跳转导致 cookie 丢失）
-    if (req.method === 'GET' && (req.originalUrl || '').startsWith('/api/oauth/callback')) {
-      return next()
-    }
-
     const token = req.cookies?.codexToken
 
     if (!token) {
@@ -568,9 +563,6 @@ async function setupRoutes() {
   app.all('/backend-api/*', authenticateApiKey, async (req, res) => {
     await codexRelayService.relayChatGPTBackend(req, res)
   })
-  app.post('/oauth/token', authenticateApiKey, async (req, res) => {
-    await codexRelayService.proxyOAuthToken(req, res)
-  })
 
   wsUpgradeHandler = async (req, socket, head) => {
     if (!isWebSocketUpgradeRequest(req)) {
@@ -637,7 +629,7 @@ async function start() {
     if (process.env.HTTPS_PROXY || process.env.HTTP_PROXY) {
       logger.info(`Proxy enabled: ${process.env.HTTPS_PROXY || process.env.HTTP_PROXY}`)
     } else {
-      logger.warn('Proxy not set (HTTP_PROXY/HTTPS_PROXY), outbound OAuth may be blocked')
+      logger.info('Proxy not set (HTTP_PROXY/HTTPS_PROXY), using direct outbound connections')
     }
 
     wrappedRedisClient = await connectRedis()
