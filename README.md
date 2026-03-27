@@ -1,5 +1,11 @@
 # codex-personal-proxy
 
+Language:
+
+- English: [README.md](/home/ubuntu/codex-personal-proxy/README.md)
+- 中文: [README.zh-CN.md](/home/ubuntu/codex-personal-proxy/README.zh-CN.md)
+- 中文保姆指南: [GUIDE.zh-CN.md](/home/ubuntu/codex-personal-proxy/GUIDE.zh-CN.md)
+
 `codex-personal-proxy` is a personal Codex relay for one account on one server.
 
 It is intended only to solve individual usage:
@@ -167,9 +173,11 @@ curl -sS http://127.0.0.1:3101/health
 curl -sS https://codex.example.com/codex-admin/health
 ```
 
-## AutoDL / GPU Server Note
+## Restricted-Network GPU Server Note
 
-If you use this on AutoDL or similar GPU servers, the cleanest options are:
+Here "AutoDL-like" means GPU or cloud servers whose outbound access to Codex/OpenAI/ChatGPT-related endpoints is restricted or unstable. It does not mean only one specific provider.
+
+If you use this on AutoDL-like or otherwise restricted-network GPU servers, the cleanest options are:
 
 1. keep it private and use SSH tunnel
 2. or register a cheap overseas domain and reverse-proxy it with nginx
