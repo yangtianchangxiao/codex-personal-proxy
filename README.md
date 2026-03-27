@@ -6,14 +6,34 @@
   <a href="./GUIDE.zh-CN.md">中文部署指南</a>
 </p>
 
-`codex-personal-proxy` is a personal Codex relay for one account on one server.
+Run your own personal Codex endpoint on one server, then access it from Claude Code, Codex CLI, or OpenAI-compatible tools using your own `cx_...` API key.
 
-It is intended only to solve individual usage:
+## What This Project Is
+
+`codex-personal-proxy` is a personal relay for:
 
 - one person
 - one upstream account
 - one server or one personal VM
 - localhost, LAN, SSH tunnel, or a simple personal domain
+
+It includes a built-in compatibility bridge so you can expose:
+
+- an OpenAI Responses endpoint for Codex CLI and OpenAI-compatible tools
+- a `chat.completions` endpoint for older adapters
+- an Anthropic-compatible endpoint for Claude Code
+
+## What You Can Use It For
+
+Use this repo when you want to:
+
+- keep your own Codex account behind your own endpoint
+- generate your own `cx_...` key and use it across your own devices
+- use Claude Code against a Codex/OpenAI-backed endpoint
+- use Codex CLI against a self-hosted relay instead of direct local setup
+- run the relay privately through localhost, SSH tunnel, or your own domain
+
+## What This Project Is Not
 
 It is not intended for:
 
@@ -23,7 +43,15 @@ It is not intended for:
 - multi-tenant routing
 - team billing or quota resale
 
-This public repo removes OAuth login on purpose. The recommended path is to log in with Codex locally, then import local `~/.codex/auth.json` into the relay.
+## Important Constraint
+
+This public repo intentionally removes OAuth login.
+
+The recommended flow is:
+
+1. log in with Codex on your own machine
+2. import local `~/.codex/auth.json` into the relay
+3. generate your own `cx_...` key in the admin UI
 
 ## What It Provides
 

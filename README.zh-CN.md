@@ -6,12 +6,34 @@
   <a href="./GUIDE.zh-CN.md">中文部署指南</a>
 </p>
 
+把你自己的 Codex 账户放到一台你自己控制的服务器后面，然后通过你自己的 `cx_...` API Key，让 Claude Code、Codex CLI 和 OpenAI 兼容工具都能接入它。
+
+## 这个项目是什么
+
 `codex-personal-proxy` 是一个面向个人使用的 Codex 中转服务，定位是：
 
 - 一个用户
 - 一个上游账户
 - 一台服务器或一台个人虚拟机
 - 通过 localhost、局域网、SSH 隧道，或者一个简单的个人域名来访问
+
+它内置了兼容层，所以可以同时暴露：
+
+- 给 Codex CLI / OpenAI 工具使用的 OpenAI Responses 接口
+- 给旧工具使用的 `chat.completions` 接口
+- 给 Claude Code 使用的 Anthropic 兼容接口
+
+## 你可以拿它做什么
+
+适合这些场景：
+
+- 把你自己的 Codex 账户放到你自己的统一入口后面
+- 给自己生成一条 `cx_...` key，在自己的多台设备上使用
+- 让 Claude Code 通过 Anthropic 兼容层接到 Codex/OpenAI
+- 让 Codex CLI 走你自己的中转，而不是完全依赖本机直连
+- 通过 localhost、SSH 隧道或你自己的域名来访问它
+
+## 这个项目不是什么
 
 它不适用于：
 
@@ -21,7 +43,15 @@
 - 多租户路由
 - 团队计费或额度转卖
 
-这个 public 仓库已经主动移除了 OAuth 登录能力。推荐做法是：先在你自己的本机上登录 Codex，再把本机的 `~/.codex/auth.json` 导入到这个中转服务里。
+## 一个重要约束
+
+这个 public 仓库已经主动移除了 OAuth 登录能力。
+
+推荐流程是：
+
+1. 先在你自己的本机上登录 Codex
+2. 再把本机的 `~/.codex/auth.json` 导入到这个中转服务里
+3. 最后在管理后台生成你自己的 `cx_...` API Key
 
 ## 它提供什么
 

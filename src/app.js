@@ -548,6 +548,15 @@ async function setupRoutes() {
     await codexRelayService.relayChatCompletionsCompat(req, res)
   })
   // 兼容路由：Anthropic 风格接口（给 Claude Code 直连使用）
+  app.get('/anthropic/v1/models', authenticateApiKey, async (req, res) => {
+    await codexRelayService.relayAnthropicModelsCompat(req, res)
+  })
+  app.post('/anthropic/v1/messages/count_tokens', authenticateApiKey, async (req, res) => {
+    await codexRelayService.relayAnthropicCountTokensCompat(req, res)
+  })
+  app.post('/anthropic/v1/messages', authenticateApiKey, async (req, res) => {
+    await codexRelayService.relayAnthropicMessagesCompat(req, res)
+  })
   app.get('/compat/anthropic/v1/models', authenticateApiKey, async (req, res) => {
     await codexRelayService.relayAnthropicModelsCompat(req, res)
   })
