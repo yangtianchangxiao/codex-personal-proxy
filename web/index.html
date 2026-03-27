@@ -1,0 +1,2096 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Codex Personal Proxy 管理台</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Element Plus CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus/dist/index.css">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      color: #e4e4e7;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+      padding: 20px 24px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header h1 i {
+      color: #10b981;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .stat-card .label {
+      font-size: 13px;
+      color: #a1a1aa;
+      margin-bottom: 8px;
+    }
+
+    .stat-card .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .stat-card.success .value { color: #10b981; }
+    .stat-card.warning .value { color: #f59e0b; }
+    .stat-card.error .value { color: #ef4444; }
+    .stat-card.info .value { color: #3b82f6; }
+
+    /* Accounts Table */
+    .accounts-section {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .section-header h2 {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .accounts-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .accounts-table th,
+    .accounts-table td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .accounts-table th {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #a1a1aa;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .accounts-table tr:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .status-badge.active {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+    }
+
+    .status-badge.error {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+
+    .status-badge.created {
+      background: rgba(59, 130, 246, 0.2);
+      color: #3b82f6;
+    }
+
+    .status-badge.rate-limited {
+      background: rgba(245, 158, 11, 0.2);
+      color: #f59e0b;
+    }
+
+    .status-badge.paused {
+      background: rgba(244, 63, 94, 0.18);
+      color: #fb7185;
+    }
+
+    .action-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+      margin-right: 8px;
+    }
+
+    .action-btn.primary {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .action-btn.success {
+      background: #10b981;
+      color: white;
+    }
+
+    .action-btn.danger {
+      background: #ef4444;
+      color: white;
+    }
+
+    .action-btn:hover {
+      opacity: 0.8;
+      transform: translateY(-1px);
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #e4e4e7;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      background: #1e1e2e;
+      border-radius: 16px;
+      padding: 32px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transform: scale(0.9);
+      transition: transform 0.3s;
+    }
+
+    .modal-overlay.active .modal {
+      transform: scale(1);
+    }
+
+    .modal h3 {
+      font-size: 20px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: #a1a1aa;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      color: #e4e4e7;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 24px;
+    }
+
+    .command-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .command-card {
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.22);
+    }
+
+    .command-card h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+    }
+
+    .command-card textarea {
+      min-height: 170px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #a1a1aa;
+    }
+
+    .empty-state i {
+      font-size: 48px;
+      margin-bottom: 16px;
+      color: #52525b;
+    }
+
+    .empty-state p {
+      font-size: 15px;
+      margin-bottom: 20px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 16px 24px;
+      border-radius: 8px;
+      color: white;
+      font-size: 14px;
+      z-index: 2000;
+      transform: translateX(120%);
+      transition: transform 0.3s;
+    }
+
+    .toast.show {
+      transform: translateX(0);
+    }
+
+    .toast.success { background: #10b981; }
+    .toast.error { background: #ef4444; }
+    .toast.info { background: #3b82f6; }
+
+    /* Back Link */
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #a1a1aa;
+      text-decoration: none;
+      font-size: 14px;
+      margin-bottom: 20px;
+      transition: color 0.2s;
+    }
+
+    .back-link:hover {
+      color: #fff;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .accounts-table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/admin-next/dashboard" class="back-link">
+      <i class="fas fa-arrow-left"></i> 返回 Dashboard
+    </a>
+
+	    <div class="header">
+	      <h1><i class="fas fa-robot"></i> OpenAI Codex 账户管理</h1>
+	      <div class="header-actions">
+	        <a class="btn btn-secondary" href="./docs/claude-codex-usage.html" target="_blank" rel="noopener noreferrer">
+	          <i class="fas fa-book"></i> 使用说明
+	        </a>
+	        <button class="btn btn-secondary" onclick="loadAccounts()">
+	          <i class="fas fa-sync-alt"></i> 刷新
+	        </button>
+	        <button class="btn btn-primary" onclick="showAddModal()">
+	          <i class="fas fa-plus"></i> 手动添加
+	        </button>
+	      </div>
+	    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card success">
+        <div class="label">活跃账户</div>
+        <div class="value" id="stat-active">0</div>
+      </div>
+      <div class="stat-card error">
+        <div class="label">错误账户</div>
+        <div class="value" id="stat-error">0</div>
+      </div>
+      <div class="stat-card info">
+        <div class="label">总请求数</div>
+        <div class="value" id="stat-requests">0</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="label">总 Token</div>
+        <div class="value" id="stat-tokens">0</div>
+      </div>
+    </div>
+
+    <!-- Accounts List -->
+    <div class="accounts-section">
+      <div class="section-header">
+        <h2><i class="fas fa-users"></i> 账户列表</h2>
+        <div style="display:flex; gap: 10px; align-items:center;">
+          <button class="btn btn-secondary" onclick="importLocalCodexAuth()" type="button">
+            <i class="fas fa-file-import"></i> 从本机导入
+          </button>
+          <button class="btn btn-success" onclick="startOAuthLogin()" type="button">
+            <i class="fab fa-openid"></i> OAuth 登录
+          </button>
+          <button class="btn btn-success" onclick="showAddModal()" type="button">
+            <i class="fas fa-plus"></i> 添加账户
+          </button>
+        </div>
+      </div>
+
+      <div id="accounts-container">
+        <div class="empty-state">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>加载中...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- API Keys -->
+    <div class="accounts-section" style="margin-top: 20px;">
+      <div class="section-header">
+        <h2><i class="fas fa-key"></i> API Keys</h2>
+        <div style="display:flex; gap: 10px; align-items:center;">
+          <button class="btn btn-primary" onclick="showCreateApiKeyModal()" type="button">
+            <i class="fas fa-plus"></i> 创建 API Key
+          </button>
+        </div>
+      </div>
+
+      <div id="api-keys-container">
+        <div class="empty-state">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>加载中...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- API Usage -->
+    <div class="accounts-section" style="margin-top: 20px;">
+      <div class="section-header">
+        <h2><i class="fas fa-plug"></i> API 使用</h2>
+      </div>
+
+      <div style="padding: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px;">
+        <div class="info-row" style="margin-bottom: 10px;">
+          <span class="label">Base URL</span>
+          <span class="value mono" id="public-api-base"></span>
+          <button class="action-btn primary" type="button" title="复制 Base URL" onclick="copyText(document.getElementById('public-api-base').textContent).then(ok=>showToast(ok?'已复制':'复制失败','info'))">
+            <i class="fas fa-copy"></i>
+          </button>
+        </div>
+
+        <div class="form-group" style="margin-top: 10px;">
+          <label>示例（替换为你的 cx_...）</label>
+          <textarea id="public-api-curl" readonly style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;"></textarea>
+          <div class="form-actions" style="justify-content: flex-end;">
+            <button class="btn btn-secondary" type="button" onclick="copyText(document.getElementById('public-api-curl').value).then(ok=>showToast(ok?'已复制':'复制失败','info'))">
+              <i class="fas fa-copy"></i> 复制示例
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Integration Commands -->
+    <div class="accounts-section" style="margin-top: 20px;">
+      <div class="section-header">
+        <h2><i class="fas fa-terminal"></i> 客户端接入方式（Ubuntu / Windows）</h2>
+      </div>
+
+      <div style="padding: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px;">
+        <p style="color:#a1a1aa; margin-bottom: 12px;">
+          将命令中的 <span class="mono">cx_...</span> 替换为你创建的 API Key。Claude Code 原生客户端请使用第一组 Anthropic 兼容入口；只有旧工具需要 <span class="mono">/chat/completions</span> 时才使用第三组。
+        </p>
+
+        <div style="font-size: 14px; font-weight: 600; color: #93c5fd; margin-top: 4px;">Claude Code 直连（推荐）</div>
+        <div class="command-grid">
+          <div class="command-card">
+            <h3>Ubuntu / macOS (bash)</h3>
+            <textarea id="cmd-ubuntu-claude" readonly></textarea>
+            <div class="form-actions" style="justify-content: flex-end; margin-top: 10px;">
+              <button class="btn btn-secondary" type="button" onclick="copyText(document.getElementById('cmd-ubuntu-claude').value).then(ok=>showToast(ok?'已复制':'复制失败','info'))">
+                <i class="fas fa-copy"></i> 复制 Ubuntu 命令
+              </button>
+            </div>
+          </div>
+
+          <div class="command-card">
+            <h3>Windows (PowerShell)</h3>
+            <textarea id="cmd-windows-claude" readonly></textarea>
+            <div class="form-actions" style="justify-content: flex-end; margin-top: 10px;">
+              <button class="btn btn-secondary" type="button" onclick="copyText(document.getElementById('cmd-windows-claude').value).then(ok=>showToast(ok?'已复制':'复制失败','info'))">
+                <i class="fas fa-copy"></i> 复制 Windows 命令
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size: 14px; font-weight: 600; color: #93c5fd; margin-top: 16px;">OpenAI Responses 接口（脚本 / SDK）</div>
+        <div class="command-grid">
+          <div class="command-card">
+            <h3>Ubuntu / macOS (bash)</h3>
+            <textarea id="cmd-ubuntu-openai" readonly></textarea>
+            <div class="form-actions" style="justify-content: flex-end; margin-top: 10px;">
+              <button class="btn btn-secondary" type="button" onclick="copyText(document.getElementById('cmd-ubuntu-openai').value).then(ok=>showToast(ok?'已复制':'复制失败','info'))">
+                <i class="fas fa-copy"></i> 复制 Ubuntu 命令
+              </button>
+            </div>
+          </div>
+
+          <div class="command-card">
+            <h3>Windows (PowerShell)</h3>
+            <textarea id="cmd-windows-openai" readonly></textarea>
+            <div class="form-actions" style="justify-content: flex-end; margin-top: 10px;">
+              <button class="btn btn-secondary" type="button" onclick="copyText(document.getElementById('cmd-windows-openai').value).then(ok=>showToast(ok?'已复制':'复制失败','info'))">
+                <i class="fas fa-copy"></i> 复制 Windows 命令
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size: 14px; font-weight: 600; color: #93c5fd; margin-top: 16px;">chat.completions 兼容接口（旧工具 / 可选）</div>
+        <div class="command-grid">
+          <div class="command-card">
+            <h3>Ubuntu / macOS (bash)</h3>
+            <textarea id="cmd-ubuntu-compat" readonly></textarea>
+            <div class="form-actions" style="justify-content: flex-end; margin-top: 10px;">
+              <button class="btn btn-secondary" type="button" onclick="copyText(document.getElementById('cmd-ubuntu-compat').value).then(ok=>showToast(ok?'已复制':'复制失败','info'))">
+                <i class="fas fa-copy"></i> 复制 Ubuntu 命令
+              </button>
+            </div>
+          </div>
+
+          <div class="command-card">
+            <h3>Windows (PowerShell)</h3>
+            <textarea id="cmd-windows-compat" readonly></textarea>
+            <div class="form-actions" style="justify-content: flex-end; margin-top: 10px;">
+              <button class="btn btn-secondary" type="button" onclick="copyText(document.getElementById('cmd-windows-compat').value).then(ok=>showToast(ok?'已复制':'复制失败','info'))">
+                <i class="fas fa-copy"></i> 复制 Windows 命令
+              </button>
+            </div>
+          </div>
+        </div>
+        <p style="color:#71717a; margin-top: 10px; font-size: 13px;">
+          第三组只兼容需要 OpenAI <span class="mono">chat.completions</span> 形状的旧客户端，例如某些 adapter。Claude Code 本身不要走这一组。
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <h3><i class="fas fa-user-plus"></i> <span id="modal-title">添加账户</span></h3>
+
+      <form id="account-form">
+        <input type="hidden" id="account-id">
+
+        <div class="form-group">
+          <label>账户名称 *</label>
+          <input type="text" id="account-name" placeholder="例如: 我的 Codex Pro 账户" required>
+        </div>
+
+        <div class="form-group">
+          <label>描述</label>
+          <textarea id="account-description" placeholder="账户描述（可选）"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label id="account-access-token-label">Access Token *</label>
+          <textarea id="account-access-token" placeholder="从 ~/.codex/auth.json 获取" required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label id="account-refresh-token-label">Refresh Token</label>
+          <textarea id="account-refresh-token" placeholder="用于自动刷新（可选）"></textarea>
+          <div id="account-token-hint" style="margin-top: 8px; color: #a1a1aa; font-size: 12px;">
+            手动添加账户时需要填写 Access Token。编辑 OAuth/导入账户时，留空会保持现有 token。
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>ChatGPT Account ID</label>
+          <input type="text" id="account-chatgpt-id" placeholder="ChatGPT 账户 ID（可选）">
+        </div>
+
+        <div class="form-group">
+          <label>计划类型</label>
+          <select id="account-plan-type">
+            <option value="">未知</option>
+            <option value="free">Free</option>
+            <option value="plus">Plus</option>
+            <option value="pro">Pro</option>
+            <option value="enterprise">Enterprise</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>账户类型</label>
+          <select id="account-account-type">
+            <option value="shared">公共池（Shared）</option>
+            <option value="dedicated">专有池（Dedicated）</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>优先级 (1-100, 数字越小优先级越高)</label>
+          <input type="number" id="account-priority" min="1" max="100" value="50">
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="hideModal()">取消</button>
+          <button type="submit" class="btn btn-success">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- OAuth Login Modal -->
+  <div class="modal-overlay" id="oauth-modal-overlay">
+    <div class="modal">
+      <h3><i class="fab fa-openid"></i> OAuth 登录</h3>
+
+      <div id="oauth-step-1">
+        <p style="margin-bottom: 16px; color: #a1a1aa;">
+          请选择一种方式开始 OAuth 登录流程：
+        </p>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label>账户名称（可修改）</label>
+          <input type="text" id="oauth-desired-account-name" placeholder="例如: 我的 Codex OAuth 账户">
+        </div>
+        <div style="display: grid; gap: 10px;">
+          <button class="btn btn-success" onclick="initiateDeviceAuth('loopback')" style="width: 100%;">
+            <i class="fas fa-play"></i> 兼容模式（回跳 localhost，复制 code）
+          </button>
+          <button class="btn btn-secondary" onclick="initiateDeviceAuth('server')" style="width: 100%;">
+            <i class="fas fa-bolt"></i> 服务器回调模式（可能失败）
+          </button>
+        </div>
+      </div>
+
+      <div id="oauth-step-2" style="display: none;">
+        <div style="text-align: center; padding: 20px 0;">
+          <p style="margin-bottom: 12px; color: #a1a1aa;">请在浏览器中访问以下网址完成登录授权:</p>
+
+          <div style="background: rgba(0,0,0,0.3); padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+            <a id="oauth-verification-url" href="#" target="_blank" style="color: #3b82f6; word-break: break-all;">
+              https://auth.openai.com/device
+            </a>
+          </div>
+
+          <p id="oauth-user-code-label" style="margin-bottom: 8px; font-size: 13px; color: #71717a;">验证码 (User Code):</p>
+          <div id="oauth-user-code" style="font-size: 32px; font-weight: 700; letter-spacing: 4px; color: #10b981; margin-bottom: 16px; font-family: monospace;">
+            ----
+          </div>
+
+          <button id="oauth-copy-user-code-btn" class="btn btn-secondary" onclick="copyUserCode()" style="margin-bottom: 20px;">
+            <i class="fas fa-copy"></i> 复制验证码
+          </button>
+
+          <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+            <i class="fas fa-info-circle" style="color: #3b82f6;"></i>
+            <span style="color: #93c5fd; font-size: 13px;">在浏览器中完成授权后，此页面会自动更新</span>
+          </div>
+
+          <div id="oauth-status" style="color: #a1a1aa; font-size: 14px;">
+            <i class="fas fa-spinner fa-spin"></i> 等待授权中...
+          </div>
+
+          <div id="oauth-manual-complete" style="display: none; margin-top: 16px; text-align: left;">
+            <p style="margin-bottom: 8px; font-size: 13px; color: #a1a1aa;">
+              兼容模式下，授权成功后会跳转到 <span style="font-family: monospace;">http://localhost:1455/auth/callback</span>（可能显示无法访问）。
+              复制地址栏完整链接（或其中的 <span style="font-family: monospace;">code</span> 参数）粘贴到下面即可完成授权：
+            </p>
+            <textarea id="oauth-callback-input" placeholder="粘贴: http://localhost:1455/auth/callback?code=...&state=... （或直接粘贴 code）"
+              style="width: 100%; min-height: 92px; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.25); color: #e4e4e7; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;"></textarea>
+            <button class="btn btn-success" onclick="submitOAuthCallback()" style="width: 100%; margin-top: 10px;">
+              <i class="fas fa-check"></i> 完成授权
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="oauth-step-3" style="display: none;">
+        <div style="text-align: center; padding: 20px 0;">
+          <i class="fas fa-check-circle" style="font-size: 48px; color: #10b981; margin-bottom: 16px;"></i>
+          <p style="margin-bottom: 20px; color: #10b981;">授权成功!</p>
+        </div>
+
+        <form id="oauth-account-form">
+          <input type="hidden" id="oauth-session-id">
+
+          <div class="form-group">
+            <label>账户名称 *</label>
+            <input type="text" id="oauth-account-name" placeholder="例如: 我的 Codex Pro 账户" required>
+          </div>
+
+          <div class="form-group">
+            <label>描述</label>
+            <textarea id="oauth-account-description" placeholder="账户描述（可选）"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>优先级 (1-100, 数字越小优先级越高)</label>
+            <input type="number" id="oauth-account-priority" min="1" max="100" value="50">
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="hideOAuthModal()">取消</button>
+            <button type="submit" class="btn btn-success">创建账户</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="form-actions" id="oauth-cancel-btn" style="margin-top: 20px;">
+        <button type="button" class="btn btn-secondary" onclick="hideOAuthModal()" style="width: 100%;">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- API Key Modal -->
+  <div class="modal-overlay" id="apikey-modal-overlay">
+    <div class="modal">
+      <h3><i class="fas fa-key"></i> API Key 已创建</h3>
+      <p style="margin: 10px 0 14px; color: #a1a1aa;">
+        该 Key 仅会显示一次，请立即复制保存。
+      </p>
+
+      <div class="form-group">
+        <label>API Key</label>
+        <textarea id="apikey-modal-value" readonly style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;"></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" onclick="hideApiKeyModal()">关闭</button>
+        <button type="button" class="btn btn-success" onclick="copyApiKeyModal()">复制</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="apikey-create-modal-overlay">
+    <div class="modal">
+      <h3><i class="fas fa-plus"></i> 创建 API Key</h3>
+
+      <form id="apikey-create-form">
+        <div class="form-group">
+          <label>名称</label>
+          <input type="text" id="apikey-create-name" placeholder="例如: 本机共享 Key">
+        </div>
+
+        <div class="form-group">
+          <label>路由方式</label>
+          <select id="apikey-create-routing-mode">
+            <option value="shared">公共池（Shared）</option>
+            <option value="dedicated">专有池（Dedicated）</option>
+          </select>
+          <div id="apikey-create-routing-hint" style="margin-top: 8px; color: #a1a1aa; font-size: 12px;"></div>
+        </div>
+
+        <div class="form-group" id="apikey-create-account-group" style="display: none;">
+          <label>专有账户</label>
+          <select id="apikey-create-account-id"></select>
+          <div style="margin-top: 8px; color: #a1a1aa; font-size: 12px;">
+            这里只显示已标记为“专有池（Dedicated）”的账户。
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="hideCreateApiKeyModal()">取消</button>
+          <button type="submit" class="btn btn-success">创建</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const HAS_ADMIN_PREFIX =
+      window.location.pathname === '/codex-admin' ||
+      window.location.pathname.startsWith('/codex-admin/');
+    const BASE_PATH = HAS_ADMIN_PREFIX ? '/codex-admin' : '';
+    const API_BASE = `${BASE_PATH}/api`;
+    const LOGIN_PATH = `${BASE_PATH}/login`;
+    const PUBLIC_API_BASE = HAS_ADMIN_PREFIX
+      ? `${window.location.origin}/codex`
+      : window.location.origin;
+    let accounts = [];
+    let apiKeys = [];
+
+    // 检查登录状态
+    async function checkAuth() {
+      try {
+        const res = await fetch(`${API_BASE}/auth/check`, {
+          credentials: 'include'
+        });
+        const data = await res.json();
+
+        if (!data.authenticated) {
+          // 未登录，跳转到登录页
+          window.location.href = LOGIN_PATH;
+          return false;
+        }
+        return true;
+      } catch (err) {
+        window.location.href = LOGIN_PATH;
+        return false;
+      }
+    }
+
+    // 页面加载
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 先检查登录
+      const isAuth = await checkAuth();
+      if (!isAuth) return;
+
+      setApiExamples();
+      loadAccounts();
+      loadStats();
+      loadApiKeys();
+
+      document.getElementById('account-form').addEventListener('submit', saveAccount);
+    });
+
+    // 加载账户列表
+    async function loadAccounts() {
+      try {
+        const res = await fetch(`${API_BASE}/accounts`, { credentials: 'include' });
+        const data = await res.json();
+
+        if (data.success) {
+          accounts = data.accounts || [];
+          renderAccounts();
+        } else {
+          throw new Error(data.error);
+        }
+      } catch (err) {
+        showToast('加载账户失败: ' + err.message, 'error');
+        document.getElementById('accounts-container').innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>加载失败，请刷新重试</p>
+          </div>
+        `;
+      }
+    }
+
+    // 从本机 ~/.codex/auth.json 导入
+    async function importLocalCodexAuth() {
+      try {
+        showToast('正在从本机导入 ~/.codex/auth.json...', 'info');
+        const res = await fetch(`${API_BASE}/accounts/import/local`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+
+        if (res.status === 401) {
+          showToast(data.message || '会话已过期，请重新登录', 'error');
+          setTimeout(() => { window.location.href = LOGIN_PATH; }, 600);
+          return;
+        }
+
+        if (!data.success) {
+          throw new Error(data.error || '导入失败');
+        }
+
+        showToast('导入成功', 'success');
+        loadAccounts();
+        loadStats();
+      } catch (err) {
+        showToast('导入失败: ' + err.message, 'error');
+      }
+    }
+
+    // 加载统计
+    async function loadStats() {
+      try {
+        const res = await fetch(`${API_BASE}/stats`, { credentials: 'include' });
+        const data = await res.json();
+
+        if (data.success) {
+          document.getElementById('stat-active').textContent = data.stats.accounts.active || 0;
+          document.getElementById('stat-error').textContent = data.stats.accounts.error || 0;
+          document.getElementById('stat-requests').textContent = data.stats.relay.totalRequests || 0;
+          document.getElementById('stat-tokens').textContent = formatNumber(data.stats.relay.totalTokens || 0);
+        }
+      } catch (err) {
+        console.error('Failed to load stats:', err);
+      }
+    }
+
+    // ==================== API Keys ====================
+
+    async function loadApiKeys() {
+      try {
+        const res = await fetch(`${API_BASE}/keys`, { credentials: 'include' });
+        const data = await res.json();
+
+        if (res.status === 401) {
+          showToast(data.message || '会话已过期，请重新登录', 'error');
+          setTimeout(() => { window.location.href = LOGIN_PATH; }, 600);
+          return;
+        }
+
+        if (data.success) {
+          apiKeys = data.keys || [];
+          renderApiKeys();
+        } else {
+          throw new Error(data.error);
+        }
+      } catch (err) {
+        const container = document.getElementById('api-keys-container');
+        if (container) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <i class="fas fa-exclamation-triangle"></i>
+              <p>加载失败，请刷新重试</p>
+            </div>
+          `;
+        }
+      }
+    }
+
+    function renderApiKeys() {
+      const container = document.getElementById('api-keys-container');
+      if (!container) return;
+
+      if (!apiKeys || apiKeys.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-key"></i>
+            <p>暂无 API Key</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <table class="accounts-table">
+          <thead>
+            <tr>
+              <th>名称</th>
+              <th>ID</th>
+              <th>Key</th>
+              <th>路由方式</th>
+              <th>目标</th>
+              <th>使用统计</th>
+              <th>创建时间</th>
+              <th>最近使用</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${apiKeys.map(k => `
+              <tr>
+                <td><strong>${escapeHtml(k.name || '')}</strong></td>
+                <td><code>${escapeHtml(k.id || '')}</code></td>
+                <td><code>cx_…${escapeHtml(k.last4 || '')}</code></td>
+                <td>${escapeHtml(getApiKeyRoutingModeLabel(k))}</td>
+                <td>${escapeHtml(getApiKeyTargetLabel(k))}</td>
+                <td>${renderUsageSummary(k.usageStats, k.lastModel, k.lastAccountId)}</td>
+                <td>${k.createdAt ? formatTime(k.createdAt) : '-'}</td>
+                <td>${k.lastUsedAt ? formatTime(k.lastUsedAt) : '-'}</td>
+                <td>
+                  <button class="action-btn danger" onclick="deleteApiKey('${k.id}')" title="删除">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function normalizeAccountTypeForUi(account) {
+      const normalized = String(account?.accountType || '').trim().toLowerCase();
+      if (normalized === 'dedicated' || normalized === 'shared') return normalized;
+      const legacy = String(account?.poolType || '').trim().toLowerCase();
+      return legacy === 'private' ? 'dedicated' : 'shared';
+    }
+
+    function getApiKeyRoutingMode(key) {
+      const normalized = String(key?.routingMode || '').trim().toLowerCase();
+      if (normalized === 'dedicated' || normalized === 'shared') return normalized;
+      return String(key?.accountId || '').trim() ? 'dedicated' : 'shared';
+    }
+
+    function getApiKeyRoutingModeLabel(key) {
+      return getApiKeyRoutingMode(key) === 'dedicated' ? '专有池' : '公共池';
+    }
+
+    function getApiKeyTargetLabel(key) {
+      if (getApiKeyRoutingMode(key) !== 'dedicated') return '公共池自动调度';
+      const normalized = String(key?.accountId || '').trim();
+      if (!normalized) return '未配置';
+      const account = (accounts || []).find((a) => a.id === normalized);
+      if (account) {
+        return `${account.name || '未命名账户'} (${normalized.slice(0, 8)})`;
+      }
+      return `已绑定: ${normalized}`;
+    }
+
+    function getDedicatedAccounts() {
+      return (accounts || []).filter((acc) => normalizeAccountTypeForUi(acc) === 'dedicated');
+    }
+
+    function populateDedicatedAccountOptions() {
+      const select = document.getElementById('apikey-create-account-id');
+      if (!select) return;
+
+      const dedicatedAccounts = getDedicatedAccounts();
+      if (dedicatedAccounts.length === 0) {
+        select.innerHTML = '<option value="">暂无可用专有账户</option>';
+        return;
+      }
+
+      select.innerHTML = dedicatedAccounts.map((acc) => `
+        <option value="${escapeHtml(acc.id)}">${escapeHtml(acc.name || '未命名账户')} (${escapeHtml((acc.planType || 'unknown').toUpperCase())})</option>
+      `).join('');
+    }
+
+    function syncApiKeyCreateForm() {
+      const mode = document.getElementById('apikey-create-routing-mode')?.value || 'shared';
+      const accountGroup = document.getElementById('apikey-create-account-group');
+      const hint = document.getElementById('apikey-create-routing-hint');
+
+      if (mode === 'dedicated') {
+        populateDedicatedAccountOptions();
+        if (accountGroup) accountGroup.style.display = 'block';
+        if (hint) hint.textContent = '该 Key 只会走你指定的专有账户，不参与公共池调度。';
+      } else {
+        if (accountGroup) accountGroup.style.display = 'none';
+        if (hint) hint.textContent = '该 Key 不绑定具体账户，会从公共池中自动选择可用账户。';
+      }
+    }
+
+    function showCreateApiKeyModal() {
+      const form = document.getElementById('apikey-create-form');
+      if (form) form.reset();
+      document.getElementById('apikey-create-name').value = 'Codex Key';
+      document.getElementById('apikey-create-routing-mode').value = 'shared';
+      syncApiKeyCreateForm();
+      document.getElementById('apikey-create-modal-overlay').classList.add('active');
+    }
+
+    function hideCreateApiKeyModal() {
+      document.getElementById('apikey-create-modal-overlay').classList.remove('active');
+    }
+
+    async function createApiKey(e) {
+      if (e) e.preventDefault();
+
+      const name = (document.getElementById('apikey-create-name')?.value || '').trim() || 'Codex Key';
+      const routingMode = document.getElementById('apikey-create-routing-mode')?.value || 'shared';
+      let accountId = '';
+
+      if (routingMode === 'dedicated') {
+        accountId = String(document.getElementById('apikey-create-account-id')?.value || '').trim();
+        if (!accountId) {
+          showToast('请选择一个专有账户', 'error');
+          return;
+        }
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/keys`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ name, routingMode, accountId })
+        });
+        const data = await res.json();
+
+        if (res.status === 401) {
+          showToast(data.message || '会话已过期，请重新登录', 'error');
+          setTimeout(() => { window.location.href = LOGIN_PATH; }, 600);
+          return;
+        }
+
+        if (!data.success) throw new Error(data.error || '创建失败');
+
+        const apiKey = data.key?.apiKey;
+        hideCreateApiKeyModal();
+        if (apiKey) {
+          showApiKeyModal(apiKey);
+        } else {
+          showToast('API Key 创建成功（未返回 key）', 'success');
+        }
+
+        loadApiKeys();
+      } catch (err) {
+        showToast('创建失败: ' + err.message, 'error');
+      }
+    }
+
+    async function deleteApiKey(id) {
+      if (!confirm('确定要删除这个 API Key 吗？')) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/keys/${id}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+        const data = await res.json();
+
+        if (res.status === 401) {
+          showToast(data.message || '会话已过期，请重新登录', 'error');
+          setTimeout(() => { window.location.href = LOGIN_PATH; }, 600);
+          return;
+        }
+
+        if (!data.success) throw new Error(data.error || '删除失败');
+
+        showToast('已删除', 'success');
+        loadApiKeys();
+      } catch (err) {
+        showToast('删除失败: ' + err.message, 'error');
+      }
+    }
+
+    // 渲染账户列表
+    function renderAccounts() {
+      const container = document.getElementById('accounts-container');
+
+      if (accounts.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>还没有添加任何 Codex 账户</p>
+            <button class="btn btn-primary" onclick="showAddModal()">
+              <i class="fas fa-plus"></i> 添加第一个账户
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <table class="accounts-table">
+          <thead>
+            <tr>
+              <th>名称</th>
+              <th>计划类型</th>
+              <th>池类型</th>
+              <th>状态</th>
+              <th>优先级</th>
+              <th>剩余额度</th>
+              <th>最后使用</th>
+              <th>使用统计</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${accounts.map(acc => `
+              <tr>
+                <td>
+                  <strong>${escapeHtml(acc.name)}</strong>
+                  ${acc.description ? `<br><small style="color: #71717a">${escapeHtml(acc.description)}</small>` : ''}
+                </td>
+                <td>${acc.planType || '-'}</td>
+                <td>${acc.accountType === 'dedicated' ? '专有' : '公共'}</td>
+                <td>${renderAccountStatus(acc)}</td>
+                <td>${acc.priority}</td>
+                <td>${renderQuotaSummary(acc)}</td>
+                <td>${acc.lastUsedAt ? formatTime(acc.lastUsedAt) : '-'}</td>
+                <td>${renderUsageSummary(acc.usageStats)}</td>
+                <td>
+                  <button class="action-btn success" onclick="refreshToken('${acc.id}')" title="刷新 Token">
+                    <i class="fas fa-sync-alt"></i>
+                  </button>
+                  <button class="action-btn primary" onclick="resetAccountStatus('${acc.id}')" title="重置状态">
+                    <i class="fas fa-rotate-left"></i>
+                  </button>
+                  <button class="action-btn primary" onclick="editAccount('${acc.id}')" title="编辑">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="action-btn danger" onclick="deleteAccount('${acc.id}')" title="删除">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function formatCooldown(seconds) {
+      const totalSeconds = Math.max(0, parseInt(seconds || 0, 10));
+      const minutes = Math.ceil(totalSeconds / 60);
+      if (minutes >= 120) return `${Math.ceil(minutes / 60)} 小时`;
+      if (minutes >= 60) return `${Math.floor(minutes / 60)} 小时 ${minutes % 60} 分钟`;
+      return `${minutes} 分钟`;
+    }
+
+    function renderUsageSummary(usageStats, lastModel = '', lastAccountId = '') {
+      if (!usageStats) return '-';
+
+      const requests = usageStats.totalRequests || 0;
+      const total = formatNumber(usageStats.totalTokens || 0);
+      const input = formatNumber(usageStats.totalInputTokens || 0);
+      const output = formatNumber(usageStats.totalOutputTokens || 0);
+      const parts = [
+        `${requests} 请求 / ${total} tokens`,
+        `In ${input} / Out ${output}`
+      ];
+
+      if (usageStats.daily) {
+        parts.push(`今日: ${usageStats.daily.requests || 0} / ${formatNumber(usageStats.daily.tokens || 0)} tokens${usageStats.daily.resetAt ? `（重置 ${formatTime(usageStats.daily.resetAt)}）` : ''}`);
+      }
+      if (usageStats.weekly) {
+        parts.push(`本周: ${usageStats.weekly.requests || 0} / ${formatNumber(usageStats.weekly.tokens || 0)} tokens${usageStats.weekly.resetAt ? `（重置 ${formatTime(usageStats.weekly.resetAt)}）` : ''}`);
+      }
+      if (usageStats.monthly) {
+        parts.push(`本月: ${usageStats.monthly.requests || 0} / ${formatNumber(usageStats.monthly.tokens || 0)} tokens${usageStats.monthly.resetAt ? `（重置 ${formatTime(usageStats.monthly.resetAt)}）` : ''}`);
+      }
+
+      if (lastModel) parts.push(`模型: ${escapeHtml(lastModel)}`);
+      if (lastAccountId) parts.push(`账户: ${escapeHtml(String(lastAccountId).slice(0, 8))}`);
+
+      return parts.join('<br>');
+    }
+
+    function renderQuotaSummary(account) {
+      const quota = account?.quotaInfo || {};
+
+      if (account?.rateLimitStatus === 'limited' && account?.cooldownRemainingSeconds > 0) {
+        const until = account.rateLimitEndAt ? formatTime(account.rateLimitEndAt) : '-';
+        return `0 次<br><small style="color: #ef4444">恢复: ${until}</small>`;
+      }
+
+      if (quota.remainingRequests !== null && quota.remainingRequests !== undefined) {
+        const limit = quota.limitRequests !== null && quota.limitRequests !== undefined
+          ? ` / ${formatNumber(quota.limitRequests)}`
+          : '';
+        const reset = quota.resetAt ? `<br><small style="color: #71717a">重置: ${formatTime(quota.resetAt)}</small>` : '';
+        return `${formatNumber(quota.remainingRequests)}${limit} 次${reset}`;
+      }
+
+      if (quota.remainingTokens !== null && quota.remainingTokens !== undefined) {
+        const limit = quota.limitTokens !== null && quota.limitTokens !== undefined
+          ? ` / ${formatNumber(quota.limitTokens)}`
+          : '';
+        const reset = quota.resetAt ? `<br><small style="color: #71717a">重置: ${formatTime(quota.resetAt)}</small>` : '';
+        return `${formatNumber(quota.remainingTokens)}${limit} tokens${reset}`;
+      }
+
+      const dailyReset = account?.usageStats?.daily?.resetAt ? formatTime(account.usageStats.daily.resetAt) : null;
+      const weeklyReset = account?.usageStats?.weekly?.resetAt ? formatTime(account.usageStats.weekly.resetAt) : null;
+      const monthlyReset = account?.usageStats?.monthly?.resetAt ? formatTime(account.usageStats.monthly.resetAt) : null;
+
+      const hints = [];
+      if (dailyReset) hints.push(`日 ${dailyReset}`);
+      if (weeklyReset) hints.push(`周 ${weeklyReset}`);
+      if (monthlyReset) hints.push(`月 ${monthlyReset}`);
+
+      if (hints.length > 0) {
+        return `<span style="color: #71717a">上游未返回真实额度</span><br><small style="color: #71717a">本地统计重置: ${hints.join(' / ')}</small>`;
+      }
+
+      return '<span style="color: #71717a">上游未返回真实额度</span>';
+    }
+
+    function renderAccountStatus(account) {
+      if (!account?.schedulable) {
+        return '<span class="status-badge paused">已停用</span>';
+      }
+
+      if (account.rateLimitStatus === 'limited' && account.cooldownRemainingSeconds > 0) {
+        const until = account.rateLimitEndAt ? formatTime(account.rateLimitEndAt) : '-';
+        return `
+          <span class="status-badge rate-limited">暂时不可用</span>
+          <br><small style="color: #f59e0b;">恢复于 ${escapeHtml(until)}，约 ${escapeHtml(formatCooldown(account.cooldownRemainingSeconds))}</small>
+        `;
+      }
+
+      const status = String(account.status || 'created');
+      const labelMap = {
+        active: '可用',
+        created: '已创建',
+        error: '错误',
+        unauthorized: '未授权'
+      };
+      const classMap = {
+        active: 'active',
+        created: 'created',
+        error: 'error',
+        unauthorized: 'error'
+      };
+
+      return `<span class="status-badge ${classMap[status] || 'created'}">${escapeHtml(labelMap[status] || status)}</span>`;
+    }
+
+    // 显示添加模态框
+    function showAddModal() {
+      document.getElementById('modal-title').textContent = '添加账户';
+      document.getElementById('account-form').reset();
+      document.getElementById('account-id').value = '';
+      document.getElementById('account-access-token-label').textContent = 'Access Token *';
+      document.getElementById('account-access-token').required = true;
+      document.getElementById('account-access-token').placeholder = '从 ~/.codex/auth.json 获取';
+      document.getElementById('account-refresh-token').placeholder = '用于自动刷新（可选）';
+      document.getElementById('account-token-hint').textContent = '手动添加账户时需要填写 Access Token。编辑 OAuth/导入账户时，留空会保持现有 token。';
+      document.getElementById('account-account-type').value = 'shared';
+      document.getElementById('modal-overlay').classList.add('active');
+    }
+
+    // 编辑账户
+    function editAccount(id) {
+      const account = accounts.find(a => a.id === id);
+      if (!account) return;
+
+      document.getElementById('modal-title').textContent = '编辑账户';
+      document.getElementById('account-id').value = account.id;
+      document.getElementById('account-name').value = account.name || '';
+      document.getElementById('account-description').value = account.description || '';
+      document.getElementById('account-access-token').value = ''; // 不显示敏感信息
+      document.getElementById('account-access-token').required = false;
+      document.getElementById('account-access-token-label').textContent = 'Access Token';
+      document.getElementById('account-access-token').placeholder = '留空则保持现有 Access Token';
+      document.getElementById('account-refresh-token').value = '';
+      document.getElementById('account-refresh-token').placeholder = '留空则保持现有 Refresh Token';
+      document.getElementById('account-token-hint').textContent = '编辑已存在账户时，这两个字段都不是必填。只有你想手动替换 token 时才需要填写。';
+      document.getElementById('account-chatgpt-id').value = account.chatgptAccountId || '';
+      document.getElementById('account-plan-type').value = account.planType || '';
+      document.getElementById('account-account-type').value = account.accountType || 'shared';
+      document.getElementById('account-priority').value = account.priority || 50;
+
+      document.getElementById('modal-overlay').classList.add('active');
+    }
+
+    // 隐藏模态框
+    function hideModal() {
+      document.getElementById('modal-overlay').classList.remove('active');
+    }
+
+    // 保存账户
+    async function saveAccount(e) {
+      e.preventDefault();
+
+      const id = document.getElementById('account-id').value;
+      const data = {
+        name: document.getElementById('account-name').value,
+        description: document.getElementById('account-description').value,
+        chatgptAccountId: document.getElementById('account-chatgpt-id').value,
+        planType: document.getElementById('account-plan-type').value,
+        accountType: document.getElementById('account-account-type').value || 'shared',
+        priority: parseInt(document.getElementById('account-priority').value) || 50
+      };
+
+      // 只在有值时添加敏感字段
+      const accessToken = document.getElementById('account-access-token').value;
+      const refreshToken = document.getElementById('account-refresh-token').value;
+      if (accessToken) data.accessToken = accessToken;
+      if (refreshToken) data.refreshToken = refreshToken;
+
+      try {
+        let url = `${API_BASE}/accounts`;
+        let method = 'POST';
+
+        if (id) {
+          url = `${API_BASE}/accounts/${id}`;
+          method = 'PUT';
+        }
+
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+          credentials: 'include'
+        });
+
+        const result = await res.json();
+
+        if (result.success) {
+          showToast(id ? '账户已更新' : '账户已创建', 'success');
+          hideModal();
+          loadAccounts();
+          loadStats();
+        } else {
+          throw new Error(result.error);
+        }
+      } catch (err) {
+        showToast('保存失败: ' + err.message, 'error');
+      }
+    }
+
+    // 删除账户
+    async function deleteAccount(id) {
+      const account = accounts.find(a => a.id === id);
+      if (!confirm(`确定要删除账户 "${account?.name}" 吗？`)) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/accounts/${id}`, { method: 'DELETE', credentials: 'include' });
+        const result = await res.json();
+
+        if (result.success) {
+          showToast('账户已删除', 'success');
+          loadAccounts();
+          loadStats();
+        } else {
+          throw new Error(result.error);
+        }
+      } catch (err) {
+        showToast('删除失败: ' + err.message, 'error');
+      }
+    }
+
+    // 刷新 Token
+    async function refreshToken(id) {
+      const account = accounts.find(a => a.id === id);
+      showToast(`正在刷新 ${account?.name} 的 Token...`, 'info');
+
+      try {
+        const res = await fetch(`${API_BASE}/accounts/${id}/refresh`, { method: 'POST', credentials: 'include' });
+        const result = await res.json();
+
+        if (result.success) {
+          showToast('Token 已刷新', 'success');
+          loadAccounts();
+        } else {
+          throw new Error(result.error);
+        }
+      } catch (err) {
+        showToast('刷新失败: ' + err.message, 'error');
+      }
+    }
+
+    async function resetAccountStatus(id) {
+      const account = accounts.find(a => a.id === id);
+      if (!confirm(`确定要重置账户 "${account?.name}" 的调度状态吗？`)) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/accounts/${id}/reset-status`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+        const result = await res.json();
+
+        if (res.status === 401) {
+          showToast(result.message || '会话已过期，请重新登录', 'error');
+          setTimeout(() => { window.location.href = LOGIN_PATH; }, 600);
+          return;
+        }
+
+        if (!result.success) throw new Error(result.error || '重置失败');
+
+        showToast('账户状态已重置', 'success');
+        loadAccounts();
+        loadStats();
+      } catch (err) {
+        showToast('重置失败: ' + err.message, 'error');
+      }
+    }
+
+    // 显示提示
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast ${type} show`;
+
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // 工具函数
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+    }
+
+    function formatNumber(num) {
+      if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+      return num.toString();
+    }
+
+    function formatTime(isoString) {
+      if (!isoString) return '-';
+      const date = new Date(isoString);
+      return date.toLocaleString('zh-CN');
+    }
+
+    // 点击模态框外部关闭
+    document.getElementById('modal-overlay').addEventListener('click', (e) => {
+      if (e.target.id === 'modal-overlay') {
+        hideModal();
+      }
+    });
+
+    document.getElementById('oauth-modal-overlay').addEventListener('click', (e) => {
+      if (e.target.id === 'oauth-modal-overlay') {
+        hideOAuthModal();
+      }
+    });
+
+    document.getElementById('apikey-modal-overlay').addEventListener('click', (e) => {
+      if (e.target.id === 'apikey-modal-overlay') {
+        hideApiKeyModal();
+      }
+    });
+
+    document.getElementById('apikey-create-modal-overlay').addEventListener('click', (e) => {
+      if (e.target.id === 'apikey-create-modal-overlay') {
+        hideCreateApiKeyModal();
+      }
+    });
+
+    document.getElementById('apikey-create-form').addEventListener('submit', createApiKey);
+    document.getElementById('apikey-create-routing-mode').addEventListener('change', syncApiKeyCreateForm);
+
+    function showApiKeyModal(apiKey) {
+      const el = document.getElementById('apikey-modal-value');
+      el.value = apiKey || '';
+      document.getElementById('apikey-modal-overlay').classList.add('active');
+      setTimeout(() => {
+        try {
+          el.focus();
+          el.select();
+        } catch {}
+      }, 0);
+    }
+
+    function hideApiKeyModal() {
+      document.getElementById('apikey-modal-overlay').classList.remove('active');
+      document.getElementById('apikey-modal-value').value = '';
+    }
+
+    async function copyApiKeyModal() {
+      const el = document.getElementById('apikey-modal-value');
+      const text = el.value || '';
+      if (!text) return;
+
+      // 需要用户手势的场景下，clipboard API 可能失败，做 execCommand 兜底
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('已复制', 'success');
+        return;
+      } catch {}
+
+      try {
+        el.focus();
+        el.select();
+        const ok = document.execCommand('copy');
+        if (ok) showToast('已复制', 'success');
+        else showToast('复制失败，请手动复制', 'error');
+      } catch {
+        showToast('复制失败，请手动复制', 'error');
+      }
+    }
+
+    async function copyText(text) {
+      if (!text) return false;
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {}
+
+      try {
+        const temp = document.createElement('textarea');
+        temp.value = text;
+        temp.setAttribute('readonly', '');
+        temp.style.position = 'fixed';
+        temp.style.top = '-1000px';
+        document.body.appendChild(temp);
+        temp.focus();
+        temp.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(temp);
+        return ok;
+      } catch {
+        return false;
+      }
+    }
+
+    function setApiExamples() {
+      const baseEl = document.getElementById('public-api-base');
+      const curlEl = document.getElementById('public-api-curl');
+      if (!baseEl || !curlEl) return;
+
+      baseEl.textContent = PUBLIC_API_BASE;
+      curlEl.textContent =
+`curl -s ${PUBLIC_API_BASE}/v1/models \\\n  -H \"Authorization: Bearer cx_...\"`;
+
+      const anthropicBase = `${PUBLIC_API_BASE}/anthropic`;
+      const openaiBase = `${PUBLIC_API_BASE}/v1`;
+      const compatBase = `${PUBLIC_API_BASE}/compat/v1`;
+
+      const ubuntuClaude = document.getElementById('cmd-ubuntu-claude');
+      if (ubuntuClaude) {
+        ubuntuClaude.value =
+`export ANTHROPIC_BASE_URL=\"${anthropicBase}\"
+export ANTHROPIC_AUTH_TOKEN=\"cx_...\"
+export ANTHROPIC_MODEL=\"default\"
+npx @anthropic-ai/claude-code`;
+      }
+
+      const windowsClaude = document.getElementById('cmd-windows-claude');
+      if (windowsClaude) {
+        windowsClaude.value =
+`$env:ANTHROPIC_BASE_URL = \"${anthropicBase}\"
+$env:ANTHROPIC_AUTH_TOKEN = \"cx_...\"
+$env:ANTHROPIC_MODEL = \"default\"
+npx @anthropic-ai/claude-code`;
+      }
+
+      const ubuntuOpenai = document.getElementById('cmd-ubuntu-openai');
+      if (ubuntuOpenai) {
+        ubuntuOpenai.value =
+`export OPENAI_BASE_URL=\"${openaiBase}\"
+export OPENAI_API_KEY=\"cx_...\"
+curl -s \"$OPENAI_BASE_URL/models\" \\
+  -H \"Authorization: Bearer $OPENAI_API_KEY\"`;
+      }
+
+      const windowsOpenai = document.getElementById('cmd-windows-openai');
+      if (windowsOpenai) {
+        windowsOpenai.value =
+`$env:OPENAI_BASE_URL = \"${openaiBase}\"
+$env:OPENAI_API_KEY = \"cx_...\"
+curl.exe -s \"$env:OPENAI_BASE_URL/models\" `
+  + `-H \"Authorization: Bearer $env:OPENAI_API_KEY\"`;
+      }
+
+      const ubuntuCompat = document.getElementById('cmd-ubuntu-compat');
+      if (ubuntuCompat) {
+        ubuntuCompat.value =
+`export OPENAI_BASE_URL=\"${compatBase}\"
+export OPENAI_API_KEY=\"cx_...\"
+curl -s \"$OPENAI_BASE_URL/chat/completions\" \\
+  -H \"Authorization: Bearer $OPENAI_API_KEY\" \\
+  -H \"Content-Type: application/json\" \\
+  -d '{"model":"default","stream":false,"messages":[{"role":"user","content":"Reply exactly: OK"}]}'`;
+      }
+
+      const windowsCompat = document.getElementById('cmd-windows-compat');
+      if (windowsCompat) {
+        windowsCompat.value =
+`$env:OPENAI_BASE_URL = \"${compatBase}\"
+$env:OPENAI_API_KEY = \"cx_...\"
+curl.exe -s \"$env:OPENAI_BASE_URL/chat/completions\" `
+  + `-H \"Authorization: Bearer $env:OPENAI_API_KEY\" `
+  + `-H \"Content-Type: application/json\" `
+  + `-d \"{\\\"model\\\":\\\"default\\\",\\\"stream\\\":false,\\\"messages\\\":[{\\\"role\\\":\\\"user\\\",\\\"content\\\":\\\"Reply exactly: OK\\\"}]}\"`;
+      }
+    }
+
+    // OAuth Account Form
+    document.getElementById('oauth-account-form').addEventListener('submit', completeOAuthAccount);
+
+    // ==================== OAuth Device Flow ====================
+
+    let oauthSessionId = null;
+    let oauthPollInterval = null;
+    let oauthMode = 'loopback';
+
+    function startOAuthLogin() {
+      const defaultName = buildAutoOAuthAccountName();
+      // 重置状态
+      document.getElementById('oauth-step-1').style.display = 'block';
+      document.getElementById('oauth-step-2').style.display = 'none';
+      document.getElementById('oauth-step-3').style.display = 'none';
+      document.getElementById('oauth-cancel-btn').style.display = 'block';
+      oauthSessionId = null;
+      oauthMode = 'loopback';
+
+      const manualBox = document.getElementById('oauth-manual-complete');
+      if (manualBox) manualBox.style.display = 'none';
+
+      const cbInput = document.getElementById('oauth-callback-input');
+      if (cbInput) cbInput.value = '';
+      const desiredNameInput = document.getElementById('oauth-desired-account-name');
+      if (desiredNameInput) desiredNameInput.value = defaultName;
+      const fallbackNameInput = document.getElementById('oauth-account-name');
+      if (fallbackNameInput) fallbackNameInput.value = defaultName;
+
+      document.getElementById('oauth-modal-overlay').classList.add('active');
+    }
+
+    function hideOAuthModal() {
+      document.getElementById('oauth-modal-overlay').classList.remove('active');
+
+      // 停止轮询
+      if (oauthPollInterval) {
+        clearInterval(oauthPollInterval);
+        oauthPollInterval = null;
+      }
+    }
+
+    async function initiateDeviceAuth(mode) {
+      try {
+        oauthMode = mode === 'server' ? 'server' : 'loopback';
+        showToast('正在启动 OAuth 授权...', 'info');
+
+        // 使用浏览器 OAuth 授权码流程（deviceauth/device_code 在部分出口会被 Cloudflare 拦截）
+        const res = await fetch(`${API_BASE}/oauth/browser/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ mode: oauthMode })
+        });
+        const raw = await res.text();
+        let data = {};
+        try {
+          data = raw ? JSON.parse(raw) : {};
+        } catch {
+          throw new Error(`后端返回非 JSON（HTTP ${res.status}），通常是网关/反向代理异常，请稍后重试`);
+        }
+
+        if (res.status === 401) {
+          showToast(data.message || '会话已过期，请重新登录', 'error');
+          setTimeout(() => { window.location.href = LOGIN_PATH; }, 600);
+          return;
+        }
+
+        if (!data.success) throw new Error(data.error || '启动授权失败');
+
+        // 保存 session ID
+        oauthSessionId = data.sessionId;
+
+        // 显示授权链接（无需验证码）
+        document.getElementById('oauth-step-1').style.display = 'none';
+        document.getElementById('oauth-step-2').style.display = 'block';
+        document.getElementById('oauth-cancel-btn').style.display = (oauthMode === 'loopback' ? 'block' : 'none');
+
+        const authorizationUrl = data.authorizationUrl;
+        document.getElementById('oauth-verification-url').href = authorizationUrl;
+        document.getElementById('oauth-verification-url').textContent = authorizationUrl;
+
+        // 隐藏验证码相关 UI（browser flow 不需要）
+        const codeLabel = document.getElementById('oauth-user-code-label');
+        const codeEl = document.getElementById('oauth-user-code');
+        const copyBtn = document.getElementById('oauth-copy-user-code-btn');
+        if (codeLabel) codeLabel.style.display = 'none';
+        if (codeEl) codeEl.style.display = 'none';
+        if (copyBtn) copyBtn.style.display = 'none';
+
+        // 尽量自动打开授权页面（若被浏览器拦截，用户仍可点击链接）
+        try {
+          window.open(authorizationUrl, '_blank', 'noopener,noreferrer');
+        } catch {
+          // ignore
+        }
+
+        if (oauthMode === 'loopback') {
+          const manualBox = document.getElementById('oauth-manual-complete');
+          if (manualBox) manualBox.style.display = 'block';
+
+          document.getElementById('oauth-status').innerHTML =
+            '<i class="fas fa-info-circle"></i> 完成授权后请复制浏览器地址栏链接/code 并粘贴到下方';
+          showToast('请完成授权并粘贴 code', 'info');
+        } else {
+          showToast('请在新窗口中完成授权', 'info');
+          // 开始轮询（服务器回调模式）
+          startPolling(data.interval || 2);
+        }
+
+      } catch (err) {
+        showToast('启动授权失败: ' + err.message, 'error');
+      }
+    }
+
+    function buildAutoOAuthAccountName() {
+      const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+      return `Codex OAuth ${stamp}`;
+    }
+
+    function getPreferredOAuthAccountName() {
+      const preferred = (document.getElementById('oauth-desired-account-name')?.value || '').trim();
+      return preferred || buildAutoOAuthAccountName();
+    }
+
+    async function autoCreateOAuthAccount(sessionId) {
+      const res = await fetch(`${API_BASE}/oauth/device/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          name: getPreferredOAuthAccountName(),
+          description: 'Auto created after OAuth authorization',
+          priority: 50
+        }),
+        credentials: 'include'
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        showToast(data.message || '会话已过期，请重新登录', 'error');
+        setTimeout(() => { window.location.href = LOGIN_PATH; }, 600);
+        throw new Error(data.message || '会话已过期，请重新登录');
+      }
+      if (!data.success) {
+        throw new Error(data.error || '自动创建账户失败');
+      }
+      return data.account || null;
+    }
+
+    async function submitOAuthCallback() {
+      const inputEl = document.getElementById('oauth-callback-input');
+      const raw = (inputEl?.value || '').trim();
+
+      if (!oauthSessionId) {
+        showToast('Session 缺失，请重新开始', 'error');
+        return;
+      }
+      if (!raw) {
+        showToast('请粘贴回调链接或 code', 'error');
+        return;
+      }
+
+      let code = raw;
+      let state = '';
+
+      try {
+        if (raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('?') || raw.includes('code=')) {
+          const url = new URL(
+            raw.startsWith('http://') || raw.startsWith('https://')
+              ? raw
+              : (raw.startsWith('?') ? `http://localhost/${raw}` : `http://localhost/?${raw}`)
+          );
+          code = (url.searchParams.get('code') || '').trim();
+          state = (url.searchParams.get('state') || '').trim();
+        }
+      } catch {
+        // ignore
+      }
+
+      if (state && state !== oauthSessionId) {
+        showToast('state 不匹配，请确认粘贴的是本次授权的链接', 'error');
+        return;
+      }
+      if (!code) {
+        showToast('未解析到 code，请检查粘贴内容', 'error');
+        return;
+      }
+
+      try {
+        document.getElementById('oauth-status').innerHTML =
+          '<i class="fas fa-spinner fa-spin"></i> 正在完成授权...';
+
+        const res = await fetch(`${API_BASE}/oauth/browser/complete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ sessionId: oauthSessionId, code, callbackUrl: raw })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (res.status === 401) {
+          showToast(data.message || '会话已过期，请重新登录', 'error');
+          setTimeout(() => { window.location.href = LOGIN_PATH; }, 600);
+          return;
+        }
+
+        if (!data.success) throw new Error(data.error || '完成授权失败');
+
+        document.getElementById('oauth-status').innerHTML =
+          '<i class="fas fa-spinner fa-spin"></i> 授权成功，正在自动创建账户...';
+
+        try {
+          await autoCreateOAuthAccount(oauthSessionId);
+          showToast('授权并创建账户成功!', 'success');
+          hideOAuthModal();
+          loadAccounts();
+          loadStats();
+        } catch (createErr) {
+          const msg = createErr?.message || '自动创建账户失败';
+          if (msg.includes('会话已过期')) return;
+
+          console.error('Auto create account failed:', createErr);
+          document.getElementById('oauth-step-2').style.display = 'none';
+          document.getElementById('oauth-step-3').style.display = 'block';
+          document.getElementById('oauth-session-id').value = oauthSessionId;
+          document.getElementById('oauth-account-name').value = getPreferredOAuthAccountName();
+          showToast(`授权成功，但自动创建失败，请手动创建账户: ${msg}`, 'info');
+        }
+      } catch (err) {
+        document.getElementById('oauth-status').innerHTML =
+          '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i> ' + (err.message || '授权失败');
+        showToast('授权失败: ' + err.message, 'error');
+      }
+    }
+
+    function startPolling(interval) {
+      if (oauthPollInterval) {
+        clearInterval(oauthPollInterval);
+      }
+
+      oauthPollInterval = setInterval(async () => {
+        try {
+          const res = await fetch(`${API_BASE}/oauth/browser/status/${encodeURIComponent(oauthSessionId)}`, {
+            credentials: 'include'
+          });
+
+          const data = await res.json().catch(() => ({}));
+
+          if (res.status === 401) {
+            clearInterval(oauthPollInterval);
+            oauthPollInterval = null;
+            document.getElementById('oauth-status').innerHTML =
+              '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i> ' + (data.message || '会话已过期，请重新登录');
+            showToast(data.message || '会话已过期，请重新登录', 'error');
+            setTimeout(() => { window.location.href = LOGIN_PATH; }, 600);
+            return;
+          }
+
+          if (!data.success && res.status === 404) {
+            clearInterval(oauthPollInterval);
+            oauthPollInterval = null;
+            document.getElementById('oauth-status').innerHTML =
+              '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i> 授权已过期，请重新开始';
+            showToast('授权已过期，请重新开始', 'error');
+            return;
+          }
+
+          if (!data.success) {
+            throw new Error(data.error || '状态查询失败');
+          }
+
+          if (data.status === 'completed') {
+            // 授权成功
+            clearInterval(oauthPollInterval);
+            oauthPollInterval = null;
+
+            document.getElementById('oauth-status').innerHTML =
+              '<i class="fas fa-spinner fa-spin"></i> 授权成功，正在自动创建账户...';
+
+            try {
+              await autoCreateOAuthAccount(oauthSessionId);
+              showToast('授权并创建账户成功!', 'success');
+              hideOAuthModal();
+              loadAccounts();
+              loadStats();
+            } catch (createErr) {
+              const msg = createErr?.message || '自动创建账户失败';
+              if (msg.includes('会话已过期')) return;
+
+              console.error('Auto create account failed:', createErr);
+              document.getElementById('oauth-step-2').style.display = 'none';
+              document.getElementById('oauth-step-3').style.display = 'block';
+              document.getElementById('oauth-session-id').value = oauthSessionId;
+              document.getElementById('oauth-account-name').value = getPreferredOAuthAccountName();
+              showToast(`授权成功，但自动创建失败，请手动创建账户: ${msg}`, 'info');
+            }
+          } else if (data.status === 'pending') {
+            document.getElementById('oauth-status').innerHTML =
+              '<i class="fas fa-spinner fa-spin"></i> ' + (data.message || '等待授权中...');
+          } else if (data.status === 'error') {
+            clearInterval(oauthPollInterval);
+            oauthPollInterval = null;
+            document.getElementById('oauth-status').innerHTML =
+              '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i> ' + (data.message || '授权失败');
+            showToast(data.message || '授权失败', 'error');
+          }
+        } catch (err) {
+          console.error('Poll error:', err);
+        }
+      }, (interval || 5) * 1000);
+    }
+
+    function copyUserCode() {
+      const userCode = document.getElementById('oauth-user-code').textContent;
+      navigator.clipboard.writeText(userCode).then(() => {
+        showToast('验证码已复制', 'success');
+      }).catch(() => {
+        showToast('复制失败', 'error');
+      });
+    }
+
+    async function completeOAuthAccount(e) {
+      e.preventDefault();
+
+      const sessionId = document.getElementById('oauth-session-id').value;
+      const name = document.getElementById('oauth-account-name').value;
+      const description = document.getElementById('oauth-account-description').value;
+      const priority = parseInt(document.getElementById('oauth-account-priority').value) || 50;
+
+      try {
+        const res = await fetch(`${API_BASE}/oauth/device/complete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, name, description, priority }),
+          credentials: 'include'
+        });
+
+        const data = await res.json();
+
+        if (res.status === 401) {
+          showToast(data.message || '会话已过期，请重新登录', 'error');
+          setTimeout(() => { window.location.href = LOGIN_PATH; }, 600);
+          return;
+        }
+
+        if (data.success) {
+          showToast('账户创建成功!', 'success');
+          hideOAuthModal();
+          loadAccounts();
+          loadStats();
+        } else {
+          throw new Error(data.error || '创建账户失败');
+        }
+      } catch (err) {
+        showToast('创建账户失败: ' + err.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

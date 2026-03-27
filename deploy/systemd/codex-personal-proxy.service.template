@@ -1,0 +1,19 @@
+[Unit]
+Description=Codex Personal Proxy
+After=network-online.target redis-server.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__SERVICE_USER__
+Group=__SERVICE_USER__
+WorkingDirectory=__APP_DIR__
+EnvironmentFile=__APP_DIR__/.env
+ExecStart=__NODE_BIN__ __APP_DIR__/src/app.js
+Restart=always
+RestartSec=3
+StandardOutput=append:__APP_DIR__/logs/service.log
+StandardError=append:__APP_DIR__/logs/service-error.log
+
+[Install]
+WantedBy=multi-user.target

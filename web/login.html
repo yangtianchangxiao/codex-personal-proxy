@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 - Codex 管理后台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e4e4e7;
+    }
+
+    .login-container {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      padding: 48px;
+      width: 100%;
+      max-width: 420px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .logo i {
+      font-size: 48px;
+      color: #10b981;
+      margin-bottom: 16px;
+    }
+
+    .logo h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .logo p {
+      color: #a1a1aa;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: #a1a1aa;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    .input-wrapper i {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #71717a;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 14px 16px 14px 48px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.3);
+      color: #e4e4e7;
+      font-size: 15px;
+      transition: all 0.2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #10b981;
+      background: rgba(0, 0, 0, 0.4);
+    }
+
+    .form-group input::placeholder {
+      color: #52525b;
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-login:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .error-message {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 24px;
+      color: #71717a;
+      font-size: 13px;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .back-link:hover {
+      color: #a1a1aa;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="logo">
+      <i class="fas fa-robot"></i>
+      <h1>Codex 管理后台</h1>
+      <p>OpenAI Codex CLI 中继服务</p>
+    </div>
+
+    <div class="error-message" id="error-msg"></div>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label>用户名</label>
+        <div class="input-wrapper">
+          <i class="fas fa-user"></i>
+          <input type="text" id="username" placeholder="请输入用户名" required autocomplete="username">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>密码</label>
+        <div class="input-wrapper">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="password" placeholder="请输入密码" required autocomplete="current-password">
+        </div>
+      </div>
+
+      <button type="submit" class="btn-login" id="btn-login">
+        <i class="fas fa-sign-in-alt"></i> 登录
+      </button>
+    </form>
+
+    <a href="/admin-next/dashboard" class="back-link">
+      <i class="fas fa-arrow-left"></i> 返回 Claude 管理后台
+    </a>
+  </div>
+
+  <script>
+    const BASE_PATH = window.location.pathname.startsWith('/codex-admin') ? '/codex-admin' : '';
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const btn = document.getElementById('btn-login');
+      const errorMsg = document.getElementById('error-msg');
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登录中...';
+      errorMsg.classList.remove('show');
+
+      try {
+        const res = await fetch(`${BASE_PATH}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+          credentials: 'include'
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          window.location.href = `${BASE_PATH}/`;
+        } else {
+          errorMsg.textContent = data.message || '登录失败';
+          errorMsg.classList.add('show');
+        }
+      } catch (err) {
+        errorMsg.textContent = '网络错误，请重试';
+        errorMsg.classList.add('show');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> 登录';
+      }
+    });
+  </script>
+</body>
+</html>

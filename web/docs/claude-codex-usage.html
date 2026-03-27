@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Codex Personal Proxy 使用说明</title>
+  <style>
+    :root {
+      --bg: #101826;
+      --panel: #172033;
+      --text: #e5edf7;
+      --muted: #8da0b8;
+      --accent: #28c690;
+      --border: #283448;
+      --code-bg: #0a1020;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(160deg, #101826 0%, #162033 100%);
+      color: var(--text);
+      line-height: 1.65;
+      padding: 24px;
+    }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      background: rgba(10, 16, 32, 0.78);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+    }
+    h1, h2 { margin: 0 0 12px 0; line-height: 1.3; }
+    h1 { font-size: 30px; }
+    h2 { margin-top: 24px; font-size: 20px; color: var(--accent); }
+    p, li { color: var(--text); }
+    .muted { color: var(--muted); }
+    pre {
+      margin: 12px 0;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+    code { font-family: ui-monospace, Menlo, Consolas, monospace; }
+    a { color: #7db7ff; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Codex Personal Proxy 使用说明</h1>
+    <p class="muted">本文档会根据当前访问路径自动区分直连端口模式和 nginx 前缀模式。</p>
+
+    <h2>0. 当前访问模式</h2>
+    <p class="muted" id="mode-summary"></p>
+
+    <h2>1. Claude Code 原生接入</h2>
+    <pre><code id="claude-linux"></code></pre>
+    <pre><code id="claude-windows"></code></pre>
+
+    <h2>2. OpenAI Responses 接口</h2>
+    <pre><code id="openai-env"></code></pre>
+
+    <h2>3. chat.completions 兼容接口</h2>
+    <pre><code id="compat-env"></code></pre>
+
+    <h2>4. 连通性验证</h2>
+    <pre><code id="compat-curl"></code></pre>
+    <pre><code id="anthropic-curl"></code></pre>
+
+    <h2>5. 说明</h2>
+    <ul>
+      <li>将 <code>cx_xxx_replace_with_your_key</code> 替换成你自己的 API Key。</li>
+      <li>直连端口模式下使用 <code>/anthropic</code>、<code>/v1</code>、<code>/compat/v1</code>。</li>
+      <li>nginx 前缀模式下使用 <code>/codex/anthropic</code>、<code>/codex/v1</code>、<code>/codex/compat/v1</code>。</li>
+      <li>Claude Code 原生入口优先使用 Anthropic 兼容入口，不要优先走 <code>chat/completions</code>。</li>
+      <li>如果你走 OAuth loopback 模式，浏览器会跳到 <code>http://localhost:1455/auth/callback</code>，这是正常的本地回调。</li>
+    </ul>
+  </div>
+
+  <script>
+    const origin = window.location.origin;
+    const hasAdminPrefix =
+      window.location.pathname === '/codex-admin/docs/claude-codex-usage.html' ||
+      window.location.pathname.startsWith('/codex-admin/');
+    const relayRoot = hasAdminPrefix ? `${origin}/codex` : origin;
+    const adminRoot = hasAdminPrefix ? `${origin}/codex-admin` : origin;
+    const anthropicBase = `${relayRoot}/anthropic`;
+    const openaiBase = `${relayRoot}/v1`;
+    const compatBase = `${relayRoot}/compat/v1`;
+    document.getElementById('mode-summary').textContent = hasAdminPrefix
+      ? `当前是 nginx 前缀模式。管理台地址 ${adminRoot} ，API 根地址 ${relayRoot} 。`
+      : `当前是直连端口模式。管理台地址 ${adminRoot}/ ，API 根地址 ${relayRoot} 。`;
+
+    document.getElementById('claude-linux').textContent = `export ANTHROPIC_BASE_URL="${anthropicBase}"
+export ANTHROPIC_AUTH_TOKEN="cx_xxx_replace_with_your_key"
+export ANTHROPIC_MODEL="default"
+npx @anthropic-ai/claude-code`;
+
+    document.getElementById('claude-windows').textContent = `$env:ANTHROPIC_BASE_URL="${anthropicBase}"
+$env:ANTHROPIC_AUTH_TOKEN="cx_xxx_replace_with_your_key"
+$env:ANTHROPIC_MODEL="default"
+npx @anthropic-ai/claude-code`;
+
+    document.getElementById('openai-env').textContent = `export OPENAI_BASE_URL="${openaiBase}"
+export OPENAI_API_KEY="cx_xxx_replace_with_your_key"`;
+
+    document.getElementById('compat-env').textContent = `export OPENAI_BASE_URL="${compatBase}"
+export OPENAI_API_KEY="cx_xxx_replace_with_your_key"`;
+
+    document.getElementById('compat-curl').textContent = `curl -sS ${compatBase}/chat/completions \\
+  -H "Authorization: Bearer cx_xxx_replace_with_your_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model":"default",
+    "stream":false,
+    "messages":[{"role":"user","content":"Reply exactly: OK"}]
+  }'`;
+
+    document.getElementById('anthropic-curl').textContent = `curl -sS ${anthropicBase}/v1/messages \\
+  -H "x-api-key: cx_xxx_replace_with_your_key" \\
+  -H "anthropic-version: 2023-06-01" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model":"default",
+    "stream":false,
+    "max_tokens":64,
+    "messages":[{"role":"user","content":"Reply exactly: OK"}]
+  }'`;
+  </script>
+</body>
+</html>

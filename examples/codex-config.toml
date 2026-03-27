@@ -1,0 +1,13 @@
+# Example ~/.codex/config.toml snippet for using this relay via OpenAI Responses.
+# Direct port mode:
+#   base_url = "http://127.0.0.1:3101/v1"
+# Public domain + nginx prefix mode:
+#   base_url = "https://YOUR_DOMAIN/codex/v1"
+# Export OPENAI_API_KEY=cx_your_key before starting Codex.
+
+[model_providers.personal_proxy]
+name = "OpenAI"
+base_url = "http://127.0.0.1:3101/v1"
+env_key = "OPENAI_API_KEY"
+wire_api = "responses"
+requires_openai_auth = true
