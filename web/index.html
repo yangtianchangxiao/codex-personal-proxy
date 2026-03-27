@@ -1147,6 +1147,9 @@
                 <td>${acc.lastUsedAt ? formatTime(acc.lastUsedAt) : '-'}</td>
                 <td>${renderUsageSummary(acc.usageStats)}</td>
                 <td>
+                  <button class="action-btn primary" onclick="refreshRateLimits('${acc.id}')" title="刷新精确额度">
+                    <i class="fas fa-chart-line"></i>
+                  </button>
                   <button class="action-btn success" onclick="refreshToken('${acc.id}')" title="刷新 Token">
                     <i class="fas fa-sync-alt"></i>
                   </button>
@@ -1204,6 +1207,41 @@
     }
 
     function renderQuotaSummary(account) {
+      const precise = account?.preciseRateLimitInfo || {};
+      const snapshot = precise.snapshot || null;
+
+      const renderExactWindow = (label, window) => {
+        if (!window) return '';
+        const remaining = Math.max(0, Math.round(100 - Number(window.usedPercent || 0)));
+        return `${label}: ${remaining}%${window.resetAt ? `（重置 ${formatTime(window.resetAt)}）` : ''}`;
+      };
+
+      if (snapshot?.rateLimit) {
+        const parts = [];
+        const codexPrimary = renderExactWindow('5 小时', snapshot.rateLimit.primary);
+        const codexSecondary = renderExactWindow('周', snapshot.rateLimit.secondary);
+        const codeReview = renderExactWindow('Code review', snapshot.codeReviewRateLimit?.primary);
+
+        if (codexPrimary) parts.push(codexPrimary);
+        if (codexSecondary) parts.push(codexSecondary);
+        if (codeReview) parts.push(codeReview);
+
+        if (snapshot.credits && !snapshot.credits.unlimited && snapshot.credits.balance !== '') {
+          parts.push(`Credits: ${escapeHtml(String(snapshot.credits.balance))}`);
+        }
+
+        if (precise.observedAt) {
+          parts.push(`<small style="color: #71717a">精确快照: ${formatTime(precise.observedAt)}</small>`);
+        }
+
+        return parts.join('<br>');
+      }
+
+      if (precise?.error) {
+        const observedAt = precise.observedAt ? `<br><small style="color: #71717a">上次尝试: ${formatTime(precise.observedAt)}</small>` : '';
+        return `<span style="color: #f59e0b">精确额度获取失败</span>${observedAt}`;
+      }
+
       const quota = account?.quotaInfo || {};
 
       if (account?.rateLimitStatus === 'limited' && account?.cooldownRemainingSeconds > 0) {
@@ -1405,6 +1443,33 @@
         }
       } catch (err) {
         showToast('刷新失败: ' + err.message, 'error');
+      }
+    }
+
+    async function refreshRateLimits(id) {
+      const account = accounts.find(a => a.id === id);
+      showToast(`正在刷新 ${account?.name} 的精确额度...`, 'info');
+
+      try {
+        const res = await fetch(`${API_BASE}/accounts/${id}/refresh-rate-limits`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+        const result = await res.json();
+
+        if (res.status === 401) {
+          showToast(result.message || '会话已过期，请重新登录', 'error');
+          setTimeout(() => { window.location.href = LOGIN_PATH; }, 600);
+          return;
+        }
+
+        if (!result.success) throw new Error(result.error || '刷新失败');
+
+        showToast('精确额度已刷新', 'success');
+        loadAccounts();
+        loadStats();
+      } catch (err) {
+        showToast('刷新精确额度失败: ' + err.message, 'error');
       }
     }
 

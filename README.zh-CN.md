@@ -61,6 +61,7 @@
 - 内置管理后台
 - 从本机 `~/.codex/auth.json` 导入账号
 - 手动录入账户
+- 管理后台可直接看到精确的 Codex 额度快照（`5 小时`、周额度、`Code review`）
 
 ## 部署模式
 
@@ -363,6 +364,9 @@ export OPENAI_API_KEY="cx_your_key"
 - `PUBLIC_BASE_URL`：可选，公网访问地址
 - `CODEX_PROXY_URL`：可选，出站代理
 - `CODEX_DIRECT_HOSTS`：哪些域名绕过代理直连
+- `CODEX_PRECISE_RATE_LIMITS`：是否开启精确额度快照，默认 `1`
+- `CODEX_PRECISE_RATE_LIMITS_TTL_SECONDS`：精确额度刷新 TTL，默认 `300`
+- `CODEX_PRECISE_RATE_LIMITS_MAX_CONCURRENCY`：精确额度并发刷新上限，默认 `3`
 
 ## 部署相关文件
 

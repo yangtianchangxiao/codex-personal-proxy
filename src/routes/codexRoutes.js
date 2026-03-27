@@ -34,6 +34,8 @@ router.all('/backend-api/*', async (req, res) => {
 
 router.get('/accounts', async (req, res) => {
   try {
+    const forceRefresh = String(req.query.forceRefresh || '').trim() === '1'
+    await codexAccountService.refreshPreciseRateLimitsForAll({ force: forceRefresh })
     const accounts = await codexAccountService.getAllAccounts()
     res.json({ success: true, accounts })
   } catch (error) {
@@ -129,6 +131,10 @@ router.post('/accounts/import/local', async (req, res) => {
 
 router.get('/accounts/:accountId', async (req, res) => {
   try {
+    const forceRefresh = String(req.query.forceRefresh || '').trim() === '1'
+    if (forceRefresh) {
+      await codexAccountService.refreshPreciseRateLimits(req.params.accountId, { force: true })
+    }
     const account = await codexAccountService.getAccount(req.params.accountId)
     if (!account) {
       return res.status(404).json({ success: false, error: 'Account not found' })
@@ -161,6 +167,18 @@ router.post('/accounts/:accountId/refresh', async (req, res) => {
   try {
     await codexAccountService.refreshToken(req.params.accountId)
     res.json({ success: true, message: 'Token refreshed' })
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+router.post('/accounts/:accountId/refresh-rate-limits', async (req, res) => {
+  try {
+    const account = await codexAccountService.refreshPreciseRateLimits(req.params.accountId, { force: true })
+    if (!account) {
+      return res.status(404).json({ success: false, error: 'Account not found' })
+    }
+    res.json({ success: true, message: 'Exact rate limits refreshed', account })
   } catch (error) {
     res.status(500).json({ success: false, error: error.message })
   }

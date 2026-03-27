@@ -60,6 +60,7 @@ class CodexAccountService {
     this.codexOauthDeviceAuthUrl = 'https://auth.openai.com/oauth/device/code'
     this.codexApiUrl = 'https://api.openai.com/v1/responses'
     this.chatgptBackendUrl = 'https://chatgpt.com/backend-api'
+    this.chatgptWhamUsageUrl = 'https://chatgpt.com/backend-api/wham/usage'
 
     this.ENCRYPTION_ALGORITHM = 'aes-256-cbc'
     this.ENCRYPTION_SALT = 'codex-relay-salt'
@@ -70,6 +71,15 @@ class CodexAccountService {
       process.env.CODEX_ACCOUNT_COOLDOWN_SECONDS || '',
       10
     ) || 3600
+    this.PRECISE_RATE_LIMITS_ENABLED = process.env.CODEX_PRECISE_RATE_LIMITS !== '0'
+    this.PRECISE_RATE_LIMITS_TTL_SECONDS = Number.parseInt(
+      process.env.CODEX_PRECISE_RATE_LIMITS_TTL_SECONDS || '',
+      10
+    ) || 300
+    this.PRECISE_RATE_LIMITS_MAX_CONCURRENCY = Number.parseInt(
+      process.env.CODEX_PRECISE_RATE_LIMITS_MAX_CONCURRENCY || '',
+      10
+    ) || 3
 
     this._encryptionKeyCache = null
     this._decryptCache = new SimpleLRUCache(200)
@@ -250,6 +260,11 @@ class CodexAccountService {
 
   _toInt(value) {
     const parsed = Number.parseInt(value, 10)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+
+  _toFloat(value) {
+    const parsed = Number.parseFloat(value)
     return Number.isFinite(parsed) ? parsed : 0
   }
 
@@ -475,6 +490,363 @@ class CodexAccountService {
 
   _restoreAccountStatus(accountData) {
     return accountData.accessToken ? 'active' : 'created'
+  }
+
+  _parseNullableJson(raw) {
+    if (!raw || typeof raw !== 'string') return null
+    try {
+      return JSON.parse(raw)
+    } catch {
+      return null
+    }
+  }
+
+  _toIsoFromUsageTimestamp(value) {
+    if (value === undefined || value === null || value === '') return null
+
+    const numeric = Number.parseFloat(String(value))
+    if (Number.isFinite(numeric) && numeric > 0) {
+      if (numeric > 1e12) return new Date(numeric).toISOString()
+      if (numeric > 1e9) return new Date(numeric * 1000).toISOString()
+      return new Date(Date.now() + Math.ceil(numeric) * 1000).toISOString()
+    }
+
+    const parsed = Date.parse(String(value))
+    return Number.isFinite(parsed) ? new Date(parsed).toISOString() : null
+  }
+
+  _normalizeWhamWindow(rawWindow) {
+    if (!rawWindow || typeof rawWindow !== 'object') return null
+
+    const usedPercent = this._toFloat(
+      rawWindow.used_percent ??
+      rawWindow.usedPercent ??
+      rawWindow.percent_used ??
+      rawWindow.percentUsed
+    )
+
+    const limitWindowSeconds = this._toInt(
+      rawWindow.limit_window_seconds ??
+      rawWindow.limitWindowSeconds
+    )
+
+    const windowDurationMins =
+      limitWindowSeconds > 0
+        ? Math.ceil(limitWindowSeconds / 60)
+        : (rawWindow.windowDurationMins !== undefined && rawWindow.windowDurationMins !== null
+          ? this._toInt(rawWindow.windowDurationMins)
+          : null)
+
+    const resetAt = this._toIsoFromUsageTimestamp(
+      rawWindow.reset_at ??
+      rawWindow.resetAt ??
+      rawWindow.resets_at ??
+      rawWindow.resetsAt
+    )
+
+    const resetAfterSecondsRaw =
+      rawWindow.reset_after_seconds ??
+      rawWindow.resetAfterSeconds
+
+    const resetAfterSeconds =
+      resetAfterSecondsRaw === undefined || resetAfterSecondsRaw === null || resetAfterSecondsRaw === ''
+        ? null
+        : this._toInt(resetAfterSecondsRaw)
+
+    return {
+      usedPercent,
+      remainingPercent: Math.max(0, 100 - usedPercent),
+      windowDurationMins,
+      resetAt,
+      resetAfterSeconds
+    }
+  }
+
+  _normalizeWhamRateLimit(rawLimit) {
+    if (!rawLimit || typeof rawLimit !== 'object') return null
+
+    return {
+      allowed: rawLimit.allowed !== undefined ? Boolean(rawLimit.allowed) : null,
+      limitReached: rawLimit.limit_reached !== undefined
+        ? Boolean(rawLimit.limit_reached)
+        : Boolean(rawLimit.limitReached),
+      primary: this._normalizeWhamWindow(rawLimit.primary_window || rawLimit.primary),
+      secondary: this._normalizeWhamWindow(rawLimit.secondary_window || rawLimit.secondary)
+    }
+  }
+
+  _normalizeWhamCredits(rawCredits) {
+    if (!rawCredits || typeof rawCredits !== 'object') return null
+
+    return {
+      hasCredits: Boolean(rawCredits.has_credits ?? rawCredits.hasCredits),
+      unlimited: Boolean(rawCredits.unlimited),
+      balance: rawCredits.balance !== undefined && rawCredits.balance !== null
+        ? String(rawCredits.balance)
+        : '',
+      approxLocalMessages: Array.isArray(rawCredits.approx_local_messages)
+        ? rawCredits.approx_local_messages.map((value) => this._toInt(value))
+        : [],
+      approxCloudMessages: Array.isArray(rawCredits.approx_cloud_messages)
+        ? rawCredits.approx_cloud_messages.map((value) => this._toInt(value))
+        : []
+    }
+  }
+
+  _normalizeWhamUsagePayload(payload) {
+    if (!payload || typeof payload !== 'object') return null
+
+    return {
+      userId: payload.user_id ? String(payload.user_id) : '',
+      accountId: payload.account_id ? String(payload.account_id) : '',
+      email: payload.email ? String(payload.email) : '',
+      planType: payload.plan_type ? String(payload.plan_type) : '',
+      rateLimit: this._normalizeWhamRateLimit(payload.rate_limit),
+      codeReviewRateLimit: this._normalizeWhamRateLimit(payload.code_review_rate_limit),
+      additionalRateLimits: payload.additional_rate_limits ?? null,
+      credits: this._normalizeWhamCredits(payload.credits)
+    }
+  }
+
+  _pickExactResetAt(rateLimit) {
+    if (!rateLimit || typeof rateLimit !== 'object') return null
+
+    const now = Date.now()
+    const windows = [rateLimit.primary, rateLimit.secondary]
+      .filter(Boolean)
+      .map((window) => {
+        const resetAtMs = window.resetAt ? Date.parse(window.resetAt) : NaN
+        return {
+          resetAt: window.resetAt || null,
+          resetAtMs,
+          usedPercent: this._toFloat(window.usedPercent)
+        }
+      })
+      .filter((window) => Number.isFinite(window.resetAtMs) && window.resetAtMs > now)
+
+    if (windows.length === 0) return null
+
+    const reachedWindows = windows.filter((window) => window.usedPercent >= 100)
+    const candidates = reachedWindows.length > 0 ? reachedWindows : windows
+    candidates.sort((a, b) => a.resetAtMs - b.resetAtMs)
+    return candidates[0]?.resetAt || null
+  }
+
+  _buildExactRateLimitPersistence(accountData, snapshot, observedAt) {
+    const updateData = {
+      preciseRateLimitSnapshot: JSON.stringify(snapshot),
+      preciseRateLimitObservedAt: observedAt,
+      preciseRateLimitSource: 'wham_usage',
+      preciseRateLimitLastError: ''
+    }
+
+    if (snapshot.planType) {
+      updateData.planType = snapshot.planType
+    }
+
+    if (snapshot.email) {
+      updateData.accountEmail = snapshot.email
+    }
+
+    const codexRateLimit = snapshot.rateLimit
+    const isLimited = Boolean(
+      codexRateLimit &&
+      (codexRateLimit.allowed === false || codexRateLimit.limitReached === true)
+    )
+
+    if (isLimited) {
+      const resetAt = this._pickExactResetAt(codexRateLimit)
+      updateData.status = 'rate_limited'
+      updateData.rateLimitStatus = 'limited'
+      updateData.rateLimitedAt = observedAt
+      updateData.rateLimitEndAt = resetAt || accountData.rateLimitEndAt || ''
+      updateData.lastError = 'Exact Codex usage limit reached'
+    } else {
+      updateData.status = this._restoreAccountStatus(accountData)
+      updateData.rateLimitStatus = ''
+      updateData.rateLimitedAt = ''
+      updateData.rateLimitEndAt = ''
+      updateData.lastError = ''
+    }
+
+    return updateData
+  }
+
+  _buildExactRateLimitErrorUpdate(errorMessage, observedAt) {
+    return {
+      preciseRateLimitObservedAt: observedAt,
+      preciseRateLimitSource: 'wham_usage_error',
+      preciseRateLimitLastError: String(errorMessage || '')
+    }
+  }
+
+  _shouldRefreshPreciseRateLimits(accountData, { force = false } = {}) {
+    if (!this.PRECISE_RATE_LIMITS_ENABLED) return false
+    if (!accountData || !accountData.accessToken) return false
+    if (force) return true
+
+    const observedAtMs = Date.parse(accountData.preciseRateLimitObservedAt || '')
+    if (!Number.isFinite(observedAtMs)) return true
+
+    const ttlMs = Math.max(30, this.PRECISE_RATE_LIMITS_TTL_SECONDS) * 1000
+    return Date.now() - observedAtMs >= ttlMs
+  }
+
+  async _fetchWhamUsage(accessToken, chatgptAccountId = '') {
+    const proxyAgent = getProxyAgent(this.chatgptWhamUsageUrl)
+    const headers = {
+      Authorization: `Bearer ${accessToken}`,
+      host: 'chatgpt.com',
+      accept: 'application/json',
+      'user-agent': 'codex-cli/1.0'
+    }
+
+    if (chatgptAccountId) {
+      headers['chatgpt-account-id'] = chatgptAccountId
+    }
+
+    const response = await axios.get(this.chatgptWhamUsageUrl, {
+      timeout: 30000,
+      proxy: false,
+      httpAgent: proxyAgent || undefined,
+      httpsAgent: proxyAgent || undefined,
+      headers,
+      validateStatus: () => true
+    })
+
+    if (response.status >= 400) {
+      let message = `GET ${this.chatgptWhamUsageUrl} failed: ${response.status}`
+      const rawData = response.data
+      if (typeof rawData === 'string' && rawData.trim()) {
+        message += `; body=${rawData.slice(0, 500)}`
+      } else if (rawData && typeof rawData === 'object') {
+        try {
+          message += `; body=${JSON.stringify(rawData).slice(0, 500)}`
+        } catch {
+          // ignore stringify failures
+        }
+      }
+      const error = new Error(message)
+      error.response = {
+        status: response.status,
+        data: response.data,
+        headers: response.headers || {}
+      }
+      throw error
+    }
+
+    return response.data
+  }
+
+  async refreshPreciseRateLimits(accountId, { force = false, allowTokenRefresh = true } = {}) {
+    const client = redis.getClient()
+    const accountKey = this.REDIS_PREFIX + accountId
+    const lockKey = `${accountKey}:precise_usage_lock`
+    const lockValue = crypto.randomUUID()
+
+    let accountData = await client.hgetall(accountKey)
+    if (!accountData || Object.keys(accountData).length === 0) {
+      return null
+    }
+
+    accountData = await this._repairRateLimitFromLastError(accountId, accountData)
+    accountData = await this._recoverExpiredRateLimit(accountId, accountData)
+
+    if (!this._shouldRefreshPreciseRateLimits(accountData, { force })) {
+      return this._formatAccountForResponse(accountData)
+    }
+
+    const acquired = await client.set(lockKey, lockValue, { NX: true, PX: 30000 })
+    if (!acquired) {
+      await delay(300)
+      const latest = await client.hgetall(accountKey)
+      if (!latest || Object.keys(latest).length === 0) return null
+      return this._formatAccountForResponse(latest)
+    }
+
+    try {
+      accountData = await client.hgetall(accountKey)
+      if (!accountData || Object.keys(accountData).length === 0) return null
+      if (!this._shouldRefreshPreciseRateLimits(accountData, { force })) {
+        return this._formatAccountForResponse(accountData)
+      }
+
+      let accessToken = this._decrypt(accountData.accessToken)
+
+      const fetchSnapshot = async () => {
+        const raw = await this._fetchWhamUsage(accessToken, accountData.chatgptAccountId || '')
+        const normalized = this._normalizeWhamUsagePayload(raw)
+        if (!normalized) {
+          throw new Error('Failed to normalize wham usage payload')
+        }
+        return normalized
+      }
+
+      let snapshot
+      try {
+        snapshot = await fetchSnapshot()
+      } catch (error) {
+        const isUnauthorized = Number(error?.response?.status || 0) === 401
+        if (allowTokenRefresh && isUnauthorized && accountData.refreshToken) {
+          await this.refreshToken(accountId)
+          const refreshedData = await client.hgetall(accountKey)
+          if (!refreshedData || Object.keys(refreshedData).length === 0) {
+            throw error
+          }
+          accountData = refreshedData
+          accessToken = this._decrypt(accountData.accessToken)
+          snapshot = await fetchSnapshot()
+        } else {
+          throw error
+        }
+      }
+
+      const observedAt = new Date().toISOString()
+      const updateData = {
+        ...this._buildExactRateLimitPersistence(accountData, snapshot, observedAt),
+        updatedAt: new Date().toISOString()
+      }
+
+      await client.hset(accountKey, updateData)
+      return this._formatAccountForResponse({
+        ...accountData,
+        ...updateData
+      })
+    } catch (error) {
+      const observedAt = new Date().toISOString()
+      await client.hset(accountKey, {
+        ...this._buildExactRateLimitErrorUpdate(error.message, observedAt),
+        updatedAt: new Date().toISOString()
+      })
+      logger.warn(`Failed to refresh precise Codex rate limits for ${accountId}: ${error.message}`)
+      const latest = await client.hgetall(accountKey)
+      return latest && Object.keys(latest).length > 0 ? this._formatAccountForResponse(latest) : null
+    } finally {
+      try {
+        const currentLock = await client.get(lockKey)
+        if (currentLock === lockValue) {
+          await client.del(lockKey)
+        }
+      } catch {
+        // ignore lock cleanup failures
+      }
+    }
+  }
+
+  async refreshPreciseRateLimitsForAll({ force = false } = {}) {
+    if (!this.PRECISE_RATE_LIMITS_ENABLED) return
+
+    const client = redis.getClient()
+    const accountIds = await client.smembers(this.REDIS_LIST_KEY)
+    if (!Array.isArray(accountIds) || accountIds.length === 0) return
+
+    const maxConcurrent = Math.max(1, this.PRECISE_RATE_LIMITS_MAX_CONCURRENCY)
+    for (let index = 0; index < accountIds.length; index += maxConcurrent) {
+      const batch = accountIds.slice(index, index + maxConcurrent)
+      await Promise.allSettled(
+        batch.map((accountId) => this.refreshPreciseRateLimits(accountId, { force }))
+      )
+    }
   }
 
   _getRateLimitRemainingMs(accountData) {
@@ -732,6 +1104,11 @@ class CodexAccountService {
       quotaResetAt: '',
       quotaObservedAt: '',
       quotaSource: '',
+      preciseRateLimitSnapshot: '',
+      preciseRateLimitObservedAt: '',
+      preciseRateLimitSource: '',
+      preciseRateLimitLastError: '',
+      accountEmail: '',
       lastError: ''
     }
 
@@ -795,7 +1172,9 @@ class CodexAccountService {
     if (preferredId) {
       const bound = accounts.find((acc) => acc.id === preferredId)
       if (!bound) return null
-      return isAvailable(bound) && this._isSchedulable(bound.schedulable) ? bound : null
+      const refreshedBound = await this.refreshPreciseRateLimits(bound.id, { force: false })
+      const latestBound = refreshedBound || bound
+      return isAvailable(latestBound) && this._isSchedulable(latestBound.schedulable) ? latestBound : null
     }
 
     const available = accounts
@@ -813,7 +1192,15 @@ class CodexAccountService {
         return aLastUsed - bLastUsed
       })
 
-    return available[0] || null
+    for (const candidate of available) {
+      const refreshed = await this.refreshPreciseRateLimits(candidate.id, { force: false })
+      const latest = refreshed || candidate
+      if (isAvailable(latest) && this._isSchedulable(latest.schedulable)) {
+        return latest
+      }
+    }
+
+    return null
   }
 
   async updateAccount(accountId, updates) {
@@ -1069,10 +1456,12 @@ class CodexAccountService {
     const cooldownRemainingSeconds = Math.ceil(this._getRateLimitRemainingMs(accountData) / 1000)
     const isRateLimited = accountData.rateLimitStatus === 'limited' && cooldownRemainingSeconds > 0
     const parseNullableInt = (value) => (value === undefined || value === null || value === '' ? null : this._toInt(value))
+    const preciseSnapshot = this._parseNullableJson(accountData.preciseRateLimitSnapshot)
     return {
       id: accountData.id,
       name: accountData.name,
       description: accountData.description || '',
+      email: accountData.accountEmail || '',
       chatgptAccountId: accountData.chatgptAccountId || '',
       planType: accountData.planType || '',
       accountType,
@@ -1124,6 +1513,12 @@ class CodexAccountService {
         resetAt: accountData.quotaResetAt || null,
         observedAt: accountData.quotaObservedAt || null,
         source: accountData.quotaSource || ''
+      },
+      preciseRateLimitInfo: {
+        observedAt: accountData.preciseRateLimitObservedAt || null,
+        source: accountData.preciseRateLimitSource || '',
+        error: accountData.preciseRateLimitLastError || '',
+        snapshot: preciseSnapshot
       }
     }
   }

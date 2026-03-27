@@ -61,6 +61,7 @@ The recommended flow is:
 - built-in admin UI
 - local `~/.codex/auth.json` import
 - manual account entry
+- exact Codex usage snapshots in the admin UI (`5h`, weekly, `Code review`)
 
 ## Deployment Modes
 
@@ -327,6 +328,9 @@ See [examples/client-env.sh](./examples/client-env.sh).
 - `PUBLIC_BASE_URL`: optional public origin
 - `CODEX_PROXY_URL`: optional outbound proxy
 - `CODEX_DIRECT_HOSTS`: hosts that should bypass the proxy
+- `CODEX_PRECISE_RATE_LIMITS`: enable exact usage snapshots, default `1`
+- `CODEX_PRECISE_RATE_LIMITS_TTL_SECONDS`: exact snapshot refresh TTL, default `300`
+- `CODEX_PRECISE_RATE_LIMITS_MAX_CONCURRENCY`: max concurrent exact refreshes, default `3`
 
 ## Deployment Files
 
