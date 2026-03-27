@@ -1,10 +1,10 @@
 # codex-personal-proxy
 
-Language:
-
-- English: [README.md](/home/ubuntu/codex-personal-proxy/README.md)
-- 中文: [README.zh-CN.md](/home/ubuntu/codex-personal-proxy/README.zh-CN.md)
-- 中文保姆指南: [GUIDE.zh-CN.md](/home/ubuntu/codex-personal-proxy/GUIDE.zh-CN.md)
+<p align="right">
+  <a href="./README.md">English</a> |
+  <a href="./README.zh-CN.md">简体中文</a> |
+  <a href="./GUIDE.zh-CN.md">中文部署指南</a>
+</p>
 
 `codex-personal-proxy` is a personal Codex relay for one account on one server.
 
@@ -234,11 +234,11 @@ export OPENAI_API_KEY="cx_your_key"
 
 ### Codex CLI Provider Snippet
 
-See [examples/codex-config.toml](/home/ubuntu/codex-personal-proxy/examples/codex-config.toml).
+See [examples/codex-config.toml](./examples/codex-config.toml).
 
 ### More Env Examples
 
-See [examples/client-env.sh](/home/ubuntu/codex-personal-proxy/examples/client-env.sh).
+See [examples/client-env.sh](./examples/client-env.sh).
 
 ## Important Environment Variables
 
@@ -253,13 +253,13 @@ See [examples/client-env.sh](/home/ubuntu/codex-personal-proxy/examples/client-e
 
 ## Deployment Files
 
-- nginx template: [deploy/nginx/codex-personal-proxy.http.conf.template](/home/ubuntu/codex-personal-proxy/deploy/nginx/codex-personal-proxy.http.conf.template)
-- systemd template: [deploy/systemd/codex-personal-proxy.service.template](/home/ubuntu/codex-personal-proxy/deploy/systemd/codex-personal-proxy.service.template)
-- Dockerfile: [Dockerfile](/home/ubuntu/codex-personal-proxy/Dockerfile)
-- docker compose: [docker-compose.yml](/home/ubuntu/codex-personal-proxy/docker-compose.yml)
-- environment example: [.env.example](/home/ubuntu/codex-personal-proxy/.env.example)
-- docker entrypoint: [scripts/docker-entrypoint.sh](/home/ubuntu/codex-personal-proxy/scripts/docker-entrypoint.sh)
-- smoke test: [scripts/smoke-test.sh](/home/ubuntu/codex-personal-proxy/scripts/smoke-test.sh)
+- nginx template: [deploy/nginx/codex-personal-proxy.http.conf.template](./deploy/nginx/codex-personal-proxy.http.conf.template)
+- systemd template: [deploy/systemd/codex-personal-proxy.service.template](./deploy/systemd/codex-personal-proxy.service.template)
+- Dockerfile: [Dockerfile](./Dockerfile)
+- docker compose: [docker-compose.yml](./docker-compose.yml)
+- environment example: [.env.example](./.env.example)
+- docker entrypoint: [scripts/docker-entrypoint.sh](./scripts/docker-entrypoint.sh)
+- smoke test: [scripts/smoke-test.sh](./scripts/smoke-test.sh)
 
 ## Verification Checklist
 

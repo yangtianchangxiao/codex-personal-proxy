@@ -1,5 +1,11 @@
 # codex-personal-proxy 保姆级部署指南
 
+<p align="right">
+  <a href="./README.md">English</a> |
+  <a href="./README.zh-CN.md">简体中文</a> |
+  <a href="./GUIDE.zh-CN.md">中文部署指南</a>
+</p>
+
 这份指南是给第一次接触这套仓库的人用的，目标是把整个流程讲清楚：
 
 1. 服务器准备
@@ -128,7 +134,7 @@ nslookup codex.example.com
 
 - `install.sh` 里的 `--domain`
 - `install.sh` 里的 `--public-base-url`
-- nginx 模板 [codex-personal-proxy.http.conf.template](/home/ubuntu/codex-personal-proxy/deploy/nginx/codex-personal-proxy.http.conf.template)
+- nginx 模板 [codex-personal-proxy.http.conf.template](./deploy/nginx/codex-personal-proxy.http.conf.template)
 
 你直接运行：
 
