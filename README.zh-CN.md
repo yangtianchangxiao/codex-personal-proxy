@@ -111,6 +111,37 @@
 - `~/.codex/config.toml`
 - `~/.codex/auth.json`，仅在“从本机导入账号”时读取
 
+## 管理员账号密码是干什么的
+
+管理员账号密码只用于登录 Web 管理后台。
+
+它们用于：
+
+- 登录管理页面
+- 导入本机 `~/.codex/auth.json`
+- 创建或删除 `cx_...` API Key
+- 管理账户
+
+它们不用于 Claude Code、Codex CLI 或 OpenAI 兼容客户端。
+
+客户端真正需要的只有：
+
+1. 正确的 URL
+2. 你在管理后台生成的 `cx_...` API Key
+
+设置方式：
+
+- 安装脚本：`./install.sh --admin-user ... --admin-password ...`
+- Docker 环境变量：`CODEX_ADMIN_USERNAME` + `CODEX_ADMIN_PASSWORD`
+
+后续修改方式：
+
+```bash
+./scripts/reset-admin.sh --username admin --password '你的新密码'
+```
+
+这个脚本会同时更新 `data/init.json`、刷新 Redis 里的管理员凭据，并清掉旧的后台登录会话。
+
 ## 快速开始：个人使用 / 无域名
 
 ```bash
@@ -124,8 +155,6 @@ cd codex-personal-proxy
 
 ```bash
 curl -sS http://127.0.0.1:3101/health
-curl -sS http://127.0.0.1:3101/v1/models \
-  -H "Authorization: Bearer cx_your_key"
 ```
 
 管理后台：
@@ -135,6 +164,26 @@ curl -sS http://127.0.0.1:3101/v1/models \
 文档：
 
 - `http://127.0.0.1:3101/docs/claude-codex-usage.html`
+
+当你登录后台、导入本机 `~/.codex/auth.json` 并创建 `cx_...` key 之后，建议再用真实 Codex 接口验证一次：
+
+```bash
+curl -sN http://127.0.0.1:3101/v1/responses \
+  -H "Authorization: Bearer cx_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model":"gpt-5.4",
+    "instructions":"Reply exactly: OK",
+    "input":[
+      {
+        "role":"user",
+        "content":[
+          { "type":"input_text", "text":"Reply exactly: OK" }
+        ]
+      }
+    ]
+  }'
+```
 
 如果服务跑在腾讯云或其他远程机器上，但你不想直接暴露公网端口，建议用 SSH 隧道：
 

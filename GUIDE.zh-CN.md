@@ -23,6 +23,39 @@
 - 一台服务器
 - 不适合做公共中转站或商业服务
 
+## 0.1 管理员账号密码和 `cx_...` Key 的区别
+
+这是最容易混淆的地方：
+
+- 管理员账号密码：只给管理后台用
+- `cx_...` API Key：只给客户端用
+
+管理员账号密码用于：
+
+- 登录后台
+- 导入本机 `~/.codex/auth.json`
+- 创建和删除 `cx_...` key
+- 管理账户
+
+Claude Code、Codex CLI、OpenAI SDK 这些客户端都不用管理员账号密码。
+
+客户端只需要：
+
+1. 正确的 URL
+2. 一条 `cx_...` key
+
+如果后面你想改管理员账号密码，可以直接执行：
+
+```bash
+./scripts/reset-admin.sh --username admin --password '你的新密码'
+```
+
+这个脚本会：
+
+- 改写 `data/init.json`
+- 更新 Redis 里的管理员凭据
+- 清除旧的后台登录会话
+
 ## 0. 先理解两种使用方式
 
 ### 方式 A：无域名
@@ -252,6 +285,26 @@ token 会通过：
 - `ENCRYPTION_SECRET`
 
 进行加密存储。
+
+如果你只是想确认“这条链路到底能不能真的给 Codex 用”，建议在创建完 `cx_...` key 后，再跑一次真实请求：
+
+```bash
+curl -sN http://127.0.0.1:3101/v1/responses \
+  -H "Authorization: Bearer cx_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model":"gpt-5.4",
+    "instructions":"Reply exactly: OK",
+    "input":[
+      {
+        "role":"user",
+        "content":[
+          { "type":"input_text", "text":"Reply exactly: OK" }
+        ]
+      }
+    ]
+  }'
+```
 
 ## 6. 导入后怎么创建 API Key
 

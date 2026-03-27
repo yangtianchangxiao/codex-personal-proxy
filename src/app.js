@@ -39,7 +39,21 @@ async function connectRedis() {
 
   // 包装方法
   const wrappedClient = {
-    hset: (key, obj) => redisClient.hSet(key, obj),
+    hset: async (key, ...args) => {
+      if (
+        args.length === 1 &&
+        args[0] &&
+        typeof args[0] === 'object' &&
+        !Array.isArray(args[0])
+      ) {
+        let added = 0
+        for (const [field, value] of Object.entries(args[0])) {
+          added += await redisClient.hSet(key, field, String(value ?? ''))
+        }
+        return added
+      }
+      return redisClient.hSet(key, ...args)
+    },
     hgetall: (key) => redisClient.hGetAll(key),
     sadd: (key, val) => redisClient.sAdd(key, val),
     smembers: (key) => redisClient.sMembers(key),
@@ -58,6 +72,7 @@ const redisWrapper = {
   getClient: () => wrappedRedisClient
 }
 let wsUpgradeHandler = null
+const ADMIN_SESSION_PREFIX = 'codex_admin_session:'
 
 function writeUpgradeJson(socket, status, payload) {
   if (!socket || socket.destroyed) return
@@ -413,7 +428,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // 存储会话（使用 Codex 独立的 session key）
-    const sessionKey = `codex:session:${token}`
+    const sessionKey = `${ADMIN_SESSION_PREFIX}${token}`
     await client.hset(sessionKey, sessionData)
     await client.expire(sessionKey, 86400) // 24小时过期
 
@@ -441,7 +456,7 @@ app.post('/api/auth/logout', async (req, res) => {
     if (token) {
       const client = redisWrapper.getClient()
       if (client) {
-        await client.del(`codex:session:${token}`)
+        await client.del(`${ADMIN_SESSION_PREFIX}${token}`)
       }
     }
     res.clearCookie('codexToken')
@@ -464,14 +479,14 @@ app.get('/api/auth/check', async (req, res) => {
       return res.json({ authenticated: false })
     }
 
-    const sessionData = await client.hgetall(`codex:session:${token}`)
+    const sessionData = await client.hgetall(`${ADMIN_SESSION_PREFIX}${token}`)
     if (!sessionData || Object.keys(sessionData).length === 0) {
       res.clearCookie('codexToken')
       return res.json({ authenticated: false })
     }
 
     // 更新最后活动时间
-    await client.hset(`codex:session:${token}`, { lastActivity: new Date().toISOString() })
+    await client.hset(`${ADMIN_SESSION_PREFIX}${token}`, { lastActivity: new Date().toISOString() })
 
     res.json({ authenticated: true, username: sessionData.username })
   } catch (error) {
@@ -495,7 +510,7 @@ const authenticateAdmin = async (req, res, next) => {
       return res.status(503).json({ error: 'Service unavailable' })
     }
 
-    const sessionKey = `codex:session:${token}`
+    const sessionKey = `${ADMIN_SESSION_PREFIX}${token}`
     const sessionData = await client.hgetall(sessionKey)
 
     if (!sessionData || Object.keys(sessionData).length === 0) {

@@ -111,6 +111,37 @@ Client-side:
 - `~/.codex/config.toml`
 - `~/.codex/auth.json` when importing a local account
 
+## Admin Credentials
+
+The admin username/password are only for the web admin UI.
+
+They are used to:
+
+- sign in to the admin page
+- import local `~/.codex/auth.json`
+- create or delete `cx_...` API keys
+- manage accounts
+
+They are not used by Claude Code, Codex CLI, or OpenAI-compatible clients.
+
+Clients only need:
+
+1. the correct base URL
+2. a `cx_...` API key created in the admin UI
+
+How to set them:
+
+- `./install.sh --admin-user ... --admin-password ...`
+- or Docker env vars: `CODEX_ADMIN_USERNAME` + `CODEX_ADMIN_PASSWORD`
+
+How to change them later:
+
+```bash
+./scripts/reset-admin.sh --username admin --password 'your-new-password'
+```
+
+This updates `data/init.json`, refreshes the Redis admin credentials, and clears old admin login sessions.
+
 ## Quick Start: Personal / No Domain
 
 ```bash
@@ -124,8 +155,6 @@ Verify:
 
 ```bash
 curl -sS http://127.0.0.1:3101/health
-curl -sS http://127.0.0.1:3101/v1/models \
-  -H "Authorization: Bearer cx_your_key"
 ```
 
 Admin UI:
@@ -135,6 +164,26 @@ Admin UI:
 Docs:
 
 - `http://127.0.0.1:3101/docs/claude-codex-usage.html`
+
+After you log into the admin UI, import local `~/.codex/auth.json`, and create a `cx_...` key, test the actual Codex endpoint with:
+
+```bash
+curl -sN http://127.0.0.1:3101/v1/responses \
+  -H "Authorization: Bearer cx_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model":"gpt-5.4",
+    "instructions":"Reply exactly: OK",
+    "input":[
+      {
+        "role":"user",
+        "content":[
+          { "type":"input_text", "text":"Reply exactly: OK" }
+        ]
+      }
+    ]
+  }'
+```
 
 If the relay runs on Tencent Cloud and you do not want a public port, use SSH tunnel:
 
