@@ -1,0 +1,29 @@
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+
+  app:
+    build:
+      context: .
+    restart: unless-stopped
+    depends_on:
+      - redis
+    env_file:
+      - .env
+    environment:
+      REDIS_URL: redis://redis:6379
+      AUTO_START_REDIS: "0"
+      CODEX_PORT: "3101"
+    ports:
+      - "${HOST_PORT:-3101}:3101"
+    volumes:
+      - app-data:/app/data
+      - app-logs:/app/logs
+
+volumes:
+  redis-data:
+  app-data:
+  app-logs:

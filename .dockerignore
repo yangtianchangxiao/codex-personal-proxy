@@ -1,0 +1,10 @@
+.git
+.gitignore
+node_modules
+logs
+codex-relay.pid
+.tmp_api_test
+.claude
+.env
+data/init.json
+deploy/generated

@@ -113,6 +113,38 @@ Then use locally:
 - `http://127.0.0.1:3101/v1`
 - `http://127.0.0.1:3101/anthropic`
 
+## Quick Start: Docker Compose
+
+This is the simplest way to run the personal proxy without systemd or nginx.
+
+1. Prepare `.env`:
+
+```bash
+cp .env.example .env
+```
+
+Set at least:
+
+- `HOST_PORT`
+- `ENCRYPTION_SECRET`
+- `CODEX_ADMIN_USERNAME`
+- `CODEX_ADMIN_PASSWORD`
+
+2. Start:
+
+```bash
+docker compose up -d --build
+```
+
+3. Verify:
+
+```bash
+docker compose ps
+curl -sS http://127.0.0.1:${HOST_PORT:-3101}/health
+```
+
+The container entrypoint will create `data/init.json` automatically on first boot if you provide `CODEX_ADMIN_USERNAME` and `CODEX_ADMIN_PASSWORD`.
+
 ## Quick Start: Personal Domain + Nginx
 
 ```bash
@@ -134,6 +166,17 @@ systemctl status codex-personal-proxy
 curl -sS http://127.0.0.1:3101/health
 curl -sS https://codex.example.com/codex-admin/health
 ```
+
+## AutoDL / GPU Server Note
+
+If you use this on AutoDL or similar GPU servers, the cleanest options are:
+
+1. keep it private and use SSH tunnel
+2. or register a cheap overseas domain and reverse-proxy it with nginx
+
+For personal use, a simple domain + nginx setup is usually easier to manage than trying to expose random raw ports long-term.
+
+If you do not want a domain, that is still fine. Use direct port mode or SSH tunnel and keep the relay private.
 
 ## Recommended Account Flow
 
@@ -192,6 +235,7 @@ See [examples/client-env.sh](/home/ubuntu/codex-personal-proxy/examples/client-e
 ## Important Environment Variables
 
 - `CODEX_PORT`: local listen port, default `3101`
+- `HOST_PORT`: host-published Docker port, default `3101`
 - `REDIS_URL`: Redis connection, default `redis://127.0.0.1:6379`
 - `ENCRYPTION_SECRET`: required; used to encrypt stored tokens
 - `CODEX_PUBLIC_DOMAIN`: optional public domain
@@ -203,7 +247,10 @@ See [examples/client-env.sh](/home/ubuntu/codex-personal-proxy/examples/client-e
 
 - nginx template: [deploy/nginx/codex-personal-proxy.http.conf.template](/home/ubuntu/codex-personal-proxy/deploy/nginx/codex-personal-proxy.http.conf.template)
 - systemd template: [deploy/systemd/codex-personal-proxy.service.template](/home/ubuntu/codex-personal-proxy/deploy/systemd/codex-personal-proxy.service.template)
+- Dockerfile: [Dockerfile](/home/ubuntu/codex-personal-proxy/Dockerfile)
+- docker compose: [docker-compose.yml](/home/ubuntu/codex-personal-proxy/docker-compose.yml)
 - environment example: [.env.example](/home/ubuntu/codex-personal-proxy/.env.example)
+- docker entrypoint: [scripts/docker-entrypoint.sh](/home/ubuntu/codex-personal-proxy/scripts/docker-entrypoint.sh)
 - smoke test: [scripts/smoke-test.sh](/home/ubuntu/codex-personal-proxy/scripts/smoke-test.sh)
 
 ## Verification Checklist
